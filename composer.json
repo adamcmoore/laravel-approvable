@@ -1,0 +1,38 @@
+{
+    "name": "adamcmoore/laravel-approvable",
+    "description": "Require approval of changes to eloquent models",
+    "type": "package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Adam Moore",
+            "email": "adam@acmoore.co.uk"
+        },
+    ],
+    "require": {
+        "php": ">=7.1",
+        "illuminate/console": "5.6.*",
+        "illuminate/database": "5.6.*",
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0",
+        "mockery/mockery": "^1.0",
+    },
+    "autoload": {
+        "psr-4": {
+            "AcMoore\\Approvable\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AcMoore\\Approvable\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AcMoore\\Approvable\\ApprovableServiceProvider"
+            ]
+        }
+    }
+}
