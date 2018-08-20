@@ -49,6 +49,8 @@ class ApprovableTest extends ApprovableTestCase
 		$article->published_at = new \DateTime();
 		$article->save();
 
+		Article::$requires_approval = false;
+
 		$article = Article::with(['versions.user'])->find($article->id);
 
 		$this->assertNotEquals($new_title, $article->title);
@@ -78,6 +80,8 @@ class ApprovableTest extends ApprovableTestCase
 		$article->title = $new_title;
 		$article->published_at = new \DateTime();
 		$article->save();
+		
+		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -101,6 +105,8 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article->published_at = $published_at; // Should not require approval
 		$article->save();
+		
+		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -138,11 +144,13 @@ class ApprovableTest extends ApprovableTestCase
 		$new_title = 'New Title 2';
 		$article->title = $new_title;
 		$article->save();
-
 		$article = Article::with(['versions'])->find($article->id);
+
 		$this->assertEquals(1, count($article->versions));
 		$this->assertEquals($new_title, $article->draft()->values['title']);
 		$this->assertEquals($new_content, $article->draft()->values['content']);
+		
+		Article::$requires_approval = false;
 	}
 
 
@@ -216,4 +224,6 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals(Version::STATUS_APPLIED, $version->status);
 		$this->assertEquals($new_title, $article->title);
 	}
+
+
 }

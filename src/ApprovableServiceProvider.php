@@ -25,7 +25,7 @@ class ApprovableServiceProvider extends ServiceProvider
     public function boot()
     {
         $config = __DIR__.'/../config/approvable.php';
-        $migration = __DIR__.'/../database/migrations/versions.stub';
+        $migration = __DIR__.'/../migrations/versions.stub';
 
         $this->publishes([
             $config => config_path('approvable.php'),

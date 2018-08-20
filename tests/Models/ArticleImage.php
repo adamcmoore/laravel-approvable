@@ -12,34 +12,28 @@
 namespace AcMoore\Approvable\Tests\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use AcMoore\Approvable\ApprovableContract;
 use AcMoore\Approvable\Approvable;
 
-class Article extends Model implements ApprovableContract
+class ArticleImage extends Model implements ApprovableContract
 {
     use Approvable;
-    use SoftDeletes;
-
-
-    protected $dates = [
-        'published_at',
-    ];
 
     protected $fillable = [
+        'article_id',
         'title',
-        'content',
-        'published_at',
+        'file_url',
     ];
 
-    public $approvable = [
+    protected $approvable = [
         'title',
-        'content',
-        'images',
     ];
+    
+    protected $approvable_parent = 'article';
 
-    public function images()
+
+    public function article()
     {
-        return $this->hasMany(ArticleImage::class);
+        return $this->belongsTo(Article::class);
     }
 }

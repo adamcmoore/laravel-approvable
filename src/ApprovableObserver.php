@@ -29,14 +29,9 @@ class ApprovableObserver
         if (static::$restoring) return;
 
         
-        $draft_created = $model->createDraft();
+        $model->createDraft();
 
-
-        // Prevent the standard update
-        if ($draft_created) {
-        	return false;
-        } else {
-        	return true;
-        }
+        // Continue the standard update for data which wasn't versioned
+        return true;
     }
 }

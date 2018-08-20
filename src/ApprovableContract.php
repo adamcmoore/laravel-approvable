@@ -33,11 +33,27 @@ interface ApprovableContract
 
 
     /**
-     * Is the model requiring approval?
+     * Is the $requires_approval flag set?
      *
-     * @return bool
+     * @return array
+     */
+    public function isEnabled(): bool;
+
+
+    /**
+     * Is there any changed/dirty data to be drafted?
+     *
+     * @return array
      */
     public function requiresApproval(): bool;
+
+
+    /**
+     * Which changed/dirty data should be drafted?
+     *
+     * @return array
+     */
+    public function dataRequiringApproval(): array;
 
 
     /**
