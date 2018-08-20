@@ -35,7 +35,6 @@ class Article extends Model implements ApprovableContract
     public $approvable = [
         'title',
         'content',
-        'images',
     ];
 
     public function images()

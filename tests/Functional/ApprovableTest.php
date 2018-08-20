@@ -52,7 +52,7 @@ class ApprovableTest extends ApprovableTestCase
 		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
-
+		
 		$this->assertNotEquals($new_title, $article->title);
 
 		$this->assertEquals(1, count($article->versions));

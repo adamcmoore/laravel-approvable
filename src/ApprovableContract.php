@@ -32,13 +32,6 @@ interface ApprovableContract
    public function draft(): ? Models\Version;
 
 
-    /**
-     * Is the $requires_approval flag set?
-     *
-     * @return array
-     */
-    public function isEnabled(): bool;
-
 
     /**
      * Is there any changed/dirty data to be drafted?
@@ -69,5 +62,5 @@ interface ApprovableContract
      *
      * @return bool - Was a draft created?
      */
-    public function createDraft(): bool;
+    public function createVersion(): bool;
 }

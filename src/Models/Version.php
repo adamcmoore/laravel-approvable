@@ -24,8 +24,9 @@ class Version extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'values'    => 'json',
-        'status_at' => 'datetime',
+        'values'      => 'json',
+        'status_at'   => 'datetime',
+        'is_deleting' => 'boolean',
     ];
 
     const STATUS_DRAFT    = 'draft';
@@ -35,6 +36,12 @@ class Version extends Model
 
 
     public function approvable()
+    {
+        return $this->morphTo();
+    }
+
+
+    public function approvable_parent()
     {
         return $this->morphTo();
     }
