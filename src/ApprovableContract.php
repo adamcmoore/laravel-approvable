@@ -12,6 +12,7 @@
 namespace AcMoore\Approvable;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 
 interface ApprovableContract
@@ -25,12 +26,36 @@ interface ApprovableContract
 
 
     /**
-     * The Version set as STATUS_DRAFT, if any
+     * Approvable Model version considered as draft
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphOne
+     */
+   public function draft(): MorphOne;
+
+
+    /**
+     * Approvable Model versions belonging to this model.
      *
      * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
-   public function draft(): ? Models\Version;
+    public function related_versions(): MorphMany;
 
+
+    /**
+     * Approvable Model versions considered as drafts belonging to this model
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
+    public function related_drafts(): MorphMany;
+
+
+
+    /**
+     * Is approval enabled, set by static property $requires_approval
+     *
+     * @return bool
+     */
+    public function enabled(): bool;
 
 
     /**
@@ -42,6 +67,14 @@ interface ApprovableContract
 
 
     /**
+     * Which fields should be watched for changes & drafted?
+     *
+     * @return array
+     */
+    public function fieldsRequiringApproval(): array;
+
+
+    /**
      * Which changed/dirty data should be drafted?
      *
      * @return array
@@ -50,11 +83,43 @@ interface ApprovableContract
 
 
     /**
-     * Which fields should be watched for changes & drafted?
+     * The name of the defined parent relation, from the $approvable_parent property
      *
-     * @return array
+     * @return string
      */
-    public function fieldsRequiringApproval(): array;
+    public function approvableParent(): ? string;
+
+
+    /**
+     * The parent relation defined as approvableParent()
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
+    public function approvableParentRelation();
+
+
+    /**
+     * The parent model loaded via approvableParentRelation()
+     *
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function approvableParentModel();
+
+
+    /**
+     * The foriegn_key defined on the relation
+     *
+     * @return string
+     */
+    public function approvableParentRelationKey(): ? string;
+
+
+    /**
+     * The foriegn_id used in the relation
+     *
+     * @return int
+     */
+    public function approvableParentId(): ? int;
 
 
     /**

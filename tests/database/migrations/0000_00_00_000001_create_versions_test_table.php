@@ -40,8 +40,8 @@ class CreateVersionsTestTable extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['approvable_id', 'approvable_type']); 
-            $table->index(['approvable_parent_id', 'approvable_parent_type']); 
+            $table->index(['approvable_id', 'approvable_type'], 'approvable'); 
+            $table->index(['approvable_parent_id', 'approvable_parent_type'], 'approvable_parent'); 
             $table->index(['user_id', 'user_type']);    
         });
     }

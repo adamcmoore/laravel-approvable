@@ -13,6 +13,7 @@ namespace AcMoore\Approvable;
 
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\App;
@@ -40,30 +41,39 @@ trait Approvable
         return $this->morphMany(Models\Version::class, 'approvable');
     }
 
+    public function draft(): MorphOne
+    {
+        return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
+            Models\Version::STATUS_DRAFT,
+            Models\Version::STATUS_APPROVED,
+        ]);
+    }
 
     public function related_versions(): MorphMany
     {
         return $this->morphMany(Models\Version::class, 'approvable_parent');
     }
 
-
-    public function draft(): ? Models\Version
+    public function related_drafts(): MorphMany
     {
-    	return $this->versions()->where('status', Models\Version::STATUS_DRAFT)->first();
-    }
-
-
-    public function related_drafts(): ? MorphMany
-    {
-        return $this->related_versions()->where('status', Models\Version::STATUS_DRAFT);
+        return $this->morphMany(Models\Version::class, 'approvable_parent')->whereIn('status', [
+            Models\Version::STATUS_DRAFT,
+            Models\Version::STATUS_APPROVED,
+        ]);
     }
 
 
 
-    public function requiresApproval(): bool
+    public function enabled(): bool
     {
     	return static::$requires_approval;
     }
+
+
+    public function requiresApproval(): bool 
+    {         
+        return !empty($this->dataRequiringApproval());
+    } 
 
 
     public function fieldsRequiringApproval(): array
@@ -76,7 +86,6 @@ trait Approvable
     }
 
  
-    // Only consider changed/dirty data and only include whitelisted fields 
     public function dataRequiringApproval(): array 
     { 
         $values = $this->getDirty(); 
@@ -89,8 +98,7 @@ trait Approvable
  
         return $values;
     } 
-
-
+ 
 
 
     public function approvableParent(): ? string 
@@ -118,7 +126,16 @@ trait Approvable
         return $relation->getModel(); 
     } 
  
- 
+
+    public function approvableParentClass() 
+    { 
+        $model = $this->approvableParentModel(); 
+
+        if (!$model) return null; 
+        return  get_class($model); 
+    } 
+
+
     public function approvableParentRelationKey(): ? string 
     { 
         $parent_model = $this->approvableParentModel(); 
@@ -150,7 +167,7 @@ trait Approvable
     public function createVersion(bool $is_deleting = false): bool
     {
     	// Only take a draft if setup to do so and has data to version
-        if (!$this->requiresApproval()) return false;
+        if (!$this->enabled()) return false;
 
 
 		$user = Auth::user();
@@ -158,10 +175,12 @@ trait Approvable
 
 
         if (!$is_deleting) {
-    		$values = $this->dataRequiringApproval();
+            // If nothing has changed which we need to draft for, then continue regular save
+            if (!$this->requiresApproval()) {
+                return false;
+            }
 
-    		// If nothing has changed which we need to draft for, then continue regular save
-    		if (empty($values)) return false;
+    		$values = $this->dataRequiringApproval();
         }
 
 
@@ -171,7 +190,7 @@ trait Approvable
             'is_deleting'            => $is_deleting,
             'approvable_type'        => get_class($this),
             'approvable_id'          => $this->id,
-            'approvable_parent_type' => get_class($this->approvableParentModel()),
+            'approvable_parent_type' => $this->approvableParentClass(),
             'approvable_parent_id'   => $this->approvableParentId(),
             'user_type'              => ($user ? get_class($user) : null),
             'user_id'                => ($user ? $user->id : null),
@@ -180,7 +199,7 @@ trait Approvable
 
 
 		// If there is an existing draft then merge the values and update		
-		$existing_draft = $this->draft();
+		$existing_draft = $this->draft;
 		if ($existing_draft) {
 
             // If we are updating, then merge the new values with the existing draft
