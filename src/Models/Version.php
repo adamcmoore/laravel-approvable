@@ -75,8 +75,22 @@ class Version extends Model
 
     public function apply()
     {
-        $this->approvable->fill($this->values);
-        $this->approvable->save();
+        // Deleting
+        if ($this->is_deleting) {
+            $this->approvable->delete();    
+
+        // Creating
+        } elseif (is_null($this->approvable_id)) {
+            $approvable = new $this->approvable_type;
+            $approvable->fill($this->values);
+            $approvable->save();
+
+        // Updating
+        } else {
+            $this->approvable->fill($this->values);
+            $this->approvable->save();
+        }
+
 
         $this->update([
             'status'    => self::STATUS_APPLIED,

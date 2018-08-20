@@ -41,13 +41,7 @@ trait Approvable
     }
 
 
-    public function parent(): MorphMany
-    {
-        return $this->morphTo(Models\Version::class, 'approvable_parent');
-    }
-
-
-    public function relation_versions(): MorphMany
+    public function related_versions(): MorphMany
     {
         return $this->morphMany(Models\Version::class, 'approvable_parent');
     }
@@ -56,6 +50,12 @@ trait Approvable
     public function draft(): ? Models\Version
     {
     	return $this->versions()->where('status', Models\Version::STATUS_DRAFT)->first();
+    }
+
+
+    public function related_drafts(): ? MorphMany
+    {
+        return $this->related_versions()->where('status', Models\Version::STATUS_DRAFT);
     }
 
 
@@ -206,5 +206,6 @@ trait Approvable
 
 		return true;
     }
+
 
 }
