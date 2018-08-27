@@ -13,6 +13,7 @@ namespace AcMoore\Approvable;
 
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\App;
@@ -34,74 +35,199 @@ trait Approvable
     }
 
 
+
     public function versions(): MorphMany
     {
         return $this->morphMany(Models\Version::class, 'approvable');
     }
 
-
-    public function draft(): ? Models\Version
+    public function draft(): MorphOne
     {
-    	return $this->versions()->where('status', Models\Version::STATUS_DRAFT)->first();
+        return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
+            Models\Version::STATUS_DRAFT,
+            Models\Version::STATUS_APPROVED,
+            Models\Version::STATUS_REJECTED,
+        ]);
+    }
+
+    public function related_versions(): MorphMany
+    {
+        return $this->morphMany(Models\Version::class, 'approvable_parent');
+    }
+
+    public function related_drafts(): MorphMany
+    {
+        return $this->morphMany(Models\Version::class, 'approvable_parent')->whereIn('status', [
+            Models\Version::STATUS_DRAFT,
+            Models\Version::STATUS_APPROVED,
+            Models\Version::STATUS_REJECTED,
+        ]);
     }
 
 
-    public function requiresApproval(): bool
+
+    public function enabled(): bool
     {
     	return static::$requires_approval;
     }
 
 
+    public function requiresApproval(): bool 
+    {         
+        return !empty($this->dataRequiringApproval());
+    } 
+
+
     public function fieldsRequiringApproval(): array
     {
-    	if (is_null($this->approvable) || empty($this->approvable)) {
-    		return $this->fillable;
-    	} else {
-    		return $this->approvable;
-    	}
+        if (!property_exists($this, 'approvable') || empty($this->approvable)) { 
+            return $this->fillable;
+        } else {
+            return $this->approvable;
+        }
     }
 
+ 
+    public function dataRequiringApproval(): array 
+    { 
+        $values = $this->getDirty(); 
+        // If we're creating, then all data should be stored in the version 
+        if ($this->exists) {
+            $values = array_only($values, $this->fieldsRequiringApproval()); 
+        }
+ 
+        return $values;
+    } 
+ 
 
-    public function createDraft(): bool
+
+    public function approvableParent(): ? string 
+    { 
+        if (!property_exists($this, 'approvable_parent')) return null; 
+ 
+        return $this->approvable_parent; 
+    } 
+ 
+ 
+    public function approvableParentRelation()
+    { 
+        $relation = $this->approvableParent(); 
+        if (!$relation) return null; 
+ 
+        return call_user_func([$this, $relation]); 
+    } 
+ 
+ 
+    public function approvableParentModel() 
+    { 
+        $relation = $this->approvableParentRelation(); 
+        if (!$relation) return null; 
+ 
+        return $relation->getModel(); 
+    } 
+ 
+
+    public function approvableParentClass() 
+    { 
+        $model = $this->approvableParentModel(); 
+
+        if (!$model) return null; 
+        return  get_class($model); 
+    } 
+ 
+ 
+    public function approvableParentId(): ? int 
+    { 
+        $relation = $this->approvableParentRelation(); 
+        if (!$relation) return null; 
+  
+        $foreign_key = $relation->getForeignKey(); 
+
+        return object_get($this, $foreign_key); 
+    } 
+
+
+
+
+    public function createVersion(bool $is_deleting = false): bool
     {
-    	// Only take a draft if setup to do so
-        if (!$this->requiresApproval()) return false;
+    	// Only take a draft if setup to do so and has data to version
+        if (!$this->enabled()) return false;
+
+		$user = Auth::user();
+        $values = null;
 
 
-		$user   = Auth::user();
-		$values = $this->getDirty();
-		$values = array_only($values, $this->fieldsRequiringApproval());
+        if (!$is_deleting) {
+            // If nothing has changed which we need to draft for, then continue regular save
+            if (!$this->requiresApproval()) {
+                return false;
+            }
 
+    		$values = $this->dataRequiringApproval();
+        }
 
-		// If nothing has changed which we need to draft for, then continue regular save
-		if (empty($values)) return false;
 
 		$new_version = [
-        	'status'		  => Version::STATUS_DRAFT,
-        	'status_at'		  => Carbon::now(),
-        	'approvable_type' => get_class($this),
-        	'approvable_id'   => $this->id,
-        	'user_type'		  => ($user ? get_class($user) : null),
-        	'user_id'		  => ($user ? $user->id : null),
-        	'values'		  => $values,      	
+            'status'                 => Version::STATUS_DRAFT,
+            'status_at'              => Carbon::now(),
+            'is_deleting'            => $is_deleting,
+            'approvable_type'        => get_class($this),
+            'approvable_id'          => $this->id,
+            'approvable_parent_type' => $this->approvableParentClass(),
+            'approvable_parent_id'   => $this->approvableParentId(),
+            'user_type'              => ($user ? get_class($user) : null),
+            'user_id'                => ($user ? $user->id : null),
+            'values'                 => $values,
         ];
 
-
 		// If there is an existing draft then merge the values and update		
-		$draft = $this->draft();
-		if ($draft) {
-			$new_version['values'] = array_merge(
-				$draft->values, 
-				$new_version['values']
-			);
-        	$draft->update($new_version);
+		$existing_draft = $this->draft;
+		if ($existing_draft) {
 
+            // If we are updating, then merge the new values with the existing draft
+            if (!$is_deleting) {
+                $new_version['values'] = array_merge(
+                    $existing_draft->values ?? [], 
+                    $new_version['values']
+                );
+            }
+
+        	$existing_draft->update($new_version);
+            
 		} else {
         	Version::create($new_version);
 		}
 
 
+        // If the parent doesn't already have a draft, create one   
+        if ($this->approvableParentClass()) {
+            $parent_draft_relation = $this->approvableParent() .'.draft';
+            $this->load($parent_draft_relation);
+            if (!object_get($this, $parent_draft_relation)) {
+                $parent_draft = Version::create([
+                    'status'          => Version::STATUS_DRAFT,
+                    'status_at'       => Carbon::now(),
+                    'approvable_type' => $this->approvableParentClass(),
+                    'approvable_id'   => $this->approvableParentId(),
+                    'user_type'       => ($user ? get_class($user) : null),
+                    'user_id'         => ($user ? $user->id : null),
+                ]);
+            }
+        }
+
+ 
+        // Unset any changes to drafted fields 
+        $drafted_fields = $this->fieldsRequiringApproval(); 
+        foreach ($drafted_fields as $field) { 
+            if (array_key_exists($field, $this->attributes)) { 
+                $this->syncOriginalAttribute($field); 
+            } 
+        }         
+
+
 		return true;
     }
+
 
 }

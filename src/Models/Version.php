@@ -24,17 +24,25 @@ class Version extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'values'    => 'json',
-        'status_at' => 'datetime',
+        'values'      => 'json',
+        'status_at'   => 'datetime',
+        'is_deleting' => 'boolean',
     ];
 
     const STATUS_DRAFT    = 'draft';
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';
     const STATUS_APPLIED  = 'applied';
+    const STATUS_DROPPED  = 'dropped';
 
 
     public function approvable()
+    {
+        return $this->morphTo();
+    }
+
+
+    public function approvable_parent()
     {
         return $this->morphTo();
     }
@@ -48,32 +56,95 @@ class Version extends Model
 
     public function approve(string $notes = null)
     {
-        $this->update([
-            'status'    => self::STATUS_APPROVED,
-            'status_at' => Carbon::now(),
-            'notes'     => $notes,
-        ]);
+        $this->status    = self::STATUS_APPROVED;
+        $this->status_at = Carbon::now();
+        if (!is_null($notes)) {
+            $this->notes = $notes;
+        }
+        
+        $result = $this->save();
+
+        if ($result) {
+            return $this;
+        } else {
+            return false;
+        }
     }
 
 
     public function reject(string $notes = null)
     {
-        $this->update([
-            'status'    => self::STATUS_REJECTED,
-            'status_at' => Carbon::now(),
-            'notes'     => $notes,
-        ]);
+        $this->status    = self::STATUS_REJECTED;
+        $this->status_at = Carbon::now();
+        if (!is_null($notes)) {
+            $this->notes = $notes;
+        }
+        
+        $result = $this->save();
+
+        if ($result) {
+            return $this;
+        } else {
+            return false;
+        }
     }
 
 
-    public function apply()
+    public function drop(string $notes = null)
     {
-        $this->approvable->fill($this->values);
-        $this->approvable->save();
+        $this->status    = self::STATUS_DROPPED;
+        $this->status_at = Carbon::now();
+        if (!is_null($notes)) {
+            $this->notes = $notes;
+        }
+        
+        $result = $this->save();
 
-        $this->update([
-            'status'    => self::STATUS_APPLIED,
-            'status_at' => Carbon::now(),
-        ]);
+        if ($result) {
+            return $this;
+        } else {
+            return false;
+        }
+    }
+
+
+    public function apply(string $notes = null)
+    {
+        // Deleting
+        if ($this->is_deleting) {
+            $this->approvable->delete();    
+
+        // Creating
+        } elseif (is_null($this->approvable_id)) {
+            if (!is_null($this->values)) {
+                $approvable = new $this->approvable_type;
+                $approvable->fill($this->values);
+                $approvable->save();
+            }
+
+        // Updating
+        } else {
+            if (!is_null($this->values)) {
+                $this->approvable->fill($this->values);
+                $this->approvable->save();
+            }
+        }
+
+
+        $this->status    = self::STATUS_APPLIED;
+        $this->status_at = Carbon::now();
+        if (!is_null($notes)) {
+            $this->notes = $notes;
+        }
+
+        $result = $this->save();
+
+        if ($result) {
+            return $this;
+        } else {
+            return false;
+        }       
+
     }
 }
+

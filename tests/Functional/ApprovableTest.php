@@ -52,12 +52,12 @@ class ApprovableTest extends ApprovableTestCase
 		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
-
+		
 		$this->assertNotEquals($new_title, $article->title);
 
 		$this->assertEquals(1, count($article->versions));
 
-		$draft = $article->draft();
+		$draft = $article->draft;
 
 		$this->assertEquals($new_title, $draft->values['title']);
 		$this->assertEquals($user->id, $draft->user->id);
@@ -88,7 +88,7 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertNotEquals($new_title, $article->title);
 		$this->assertEquals(1, count($article->versions));
 
-		$draft = $article->draft();
+		$draft = $article->draft;
 
 		$this->assertEquals($new_title, $draft->values['title']);
 		$this->assertNull($draft->user);
@@ -128,7 +128,7 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = Article::with(['versions'])->find($article->id);
 		$this->assertEquals(1, count($article->versions));
-		$this->assertEquals($new_title, $article->draft()->values['title']);
+		$this->assertEquals($new_title, $article->draft->values['title']);
 
 
 		$new_content = 'New Content';
@@ -137,18 +137,18 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = Article::with(['versions'])->find($article->id);
 		$this->assertEquals(1, count($article->versions));
-		$this->assertEquals($new_title, $article->draft()->values['title']);
-		$this->assertEquals($new_content, $article->draft()->values['content']);
+		$this->assertEquals($new_title, $article->draft->values['title']);
+		$this->assertEquals($new_content, $article->draft->values['content']);
 
 
 		$new_title = 'New Title 2';
 		$article->title = $new_title;
 		$article->save();
-		$article = Article::with(['versions'])->find($article->id);
+		$article = Article::with(['versions', 'draft'])->find($article->id);
 
 		$this->assertEquals(1, count($article->versions));
-		$this->assertEquals($new_title, $article->draft()->values['title']);
-		$this->assertEquals($new_content, $article->draft()->values['content']);
+		$this->assertEquals($new_title, $article->draft->values['title']);
+		$this->assertEquals($new_content, $article->draft->values['content']);
 		
 		Article::$requires_approval = false;
 	}
@@ -162,13 +162,14 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article->title = 'New Title';
 		$article->save();
+		$article->load('draft');
 		
 		Article::$requires_approval = false;
 
 		$notes = 'Looks good';
-		$article->draft()->approve($notes);
+		$article->draft->approve($notes);
 
-		$article = Article::with(['versions'])->find($article->id);
+		$article = Article::with(['versions', 'draft'])->find($article->id);
 		$this->assertEquals(1, count($article->versions));
 
 		$version = $article->versions->first();
@@ -185,11 +186,12 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article->title = 'New Title';
 		$article->save();
+		$article->load('draft');
 
 		Article::$requires_approval = false;
 
 		$notes = 'No good';
-		$article->draft()->reject($notes);
+		$article->draft->reject($notes);
 
 		$article = Article::with(['versions'])->find($article->id);
 		$this->assertEquals(1, count($article->versions));
@@ -209,10 +211,11 @@ class ApprovableTest extends ApprovableTestCase
 		$new_title = 'New Title';
 		$article->title = $new_title;
 		$article->save();
+		$article->load('draft');
 
 		Article::$requires_approval = false;
 
-		$article->draft()->approve();
+		$article->draft->approve();
 
 		$article = Article::with(['versions'])->find($article->id);
 		$version = $article->versions->first();

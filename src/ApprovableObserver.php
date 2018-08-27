@@ -29,9 +29,40 @@ class ApprovableObserver
         if (static::$restoring) return;
 
         
-        $model->createDraft();
+        $model->createVersion();
 
         // Continue the standard update for data which wasn't versioned
         return true;
+    }
+
+
+    public function creating(ApprovableContract $model)
+    {
+        $version_created = false;
+        // Only create a version for relation items
+        if ($model->approvableParentRelation()) {
+            $version_created = $model->createVersion();
+        }
+
+        if ($version_created) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+
+    public function deleting(ApprovableContract $model)
+    {
+        $version_created = false;
+        if ($model->approvableParentRelation()) {
+            $version_created = $model->createVersion(true);
+        }
+        
+        if ($version_created) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
