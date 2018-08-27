@@ -46,6 +46,7 @@ trait Approvable
         return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
             Models\Version::STATUS_DRAFT,
             Models\Version::STATUS_APPROVED,
+            Models\Version::STATUS_REJECTED,
         ]);
     }
 
@@ -59,6 +60,7 @@ trait Approvable
         return $this->morphMany(Models\Version::class, 'approvable_parent')->whereIn('status', [
             Models\Version::STATUS_DRAFT,
             Models\Version::STATUS_APPROVED,
+            Models\Version::STATUS_REJECTED,
         ]);
     }
 
@@ -89,12 +91,10 @@ trait Approvable
     public function dataRequiringApproval(): array 
     { 
         $values = $this->getDirty(); 
-
         // If we're creating, then all data should be stored in the version 
         if ($this->exists) {
             $values = array_only($values, $this->fieldsRequiringApproval()); 
         }
-
  
         return $values;
     } 
@@ -134,21 +134,6 @@ trait Approvable
         if (!$model) return null; 
         return  get_class($model); 
     } 
-
-
-    public function approvableParentRelationKey(): ? string 
-    { 
-        $parent_model = $this->approvableParentModel(); 
-        if (!$parent_model) return null; 
- 
-        foreach ($this->approvableRelations($parent_model) as $relationship_key => $relationship) { 
-            if (get_class($relationship->getModel()) === get_class($this)) { 
-                return $relationship_key; 
-            } 
-        } 
-         
-        return null; 
-    } 
  
  
     public function approvableParentId(): ? int 
@@ -168,7 +153,6 @@ trait Approvable
     {
     	// Only take a draft if setup to do so and has data to version
         if (!$this->enabled()) return false;
-
 
 		$user = Auth::user();
         $values = null;
@@ -197,14 +181,16 @@ trait Approvable
             'values'                 => $values,
         ];
 
-
 		// If there is an existing draft then merge the values and update		
 		$existing_draft = $this->draft;
 		if ($existing_draft) {
 
             // If we are updating, then merge the new values with the existing draft
             if (!$is_deleting) {
-                $new_version['values'] = array_merge($existing_draft->values, $new_version['values']);
+                $new_version['values'] = array_merge(
+                    $existing_draft->values ?? [], 
+                    $new_version['values']
+                );
             }
 
         	$existing_draft->update($new_version);
@@ -212,6 +198,23 @@ trait Approvable
 		} else {
         	Version::create($new_version);
 		}
+
+
+        // If the parent doesn't already have a draft, create one   
+        if ($this->approvableParentClass()) {
+            $parent_draft_relation = $this->approvableParent() .'.draft';
+            $this->load($parent_draft_relation);
+            if (!object_get($this, $parent_draft_relation)) {
+                $parent_draft = Version::create([
+                    'status'          => Version::STATUS_DRAFT,
+                    'status_at'       => Carbon::now(),
+                    'approvable_type' => $this->approvableParentClass(),
+                    'approvable_id'   => $this->approvableParentId(),
+                    'user_type'       => ($user ? get_class($user) : null),
+                    'user_id'         => ($user ? $user->id : null),
+                ]);
+            }
+        }
 
  
         // Unset any changes to drafted fields 

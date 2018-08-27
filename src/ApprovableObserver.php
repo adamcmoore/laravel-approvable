@@ -58,7 +58,7 @@ class ApprovableObserver
         if ($model->approvableParentRelation()) {
             $version_created = $model->createVersion(true);
         }
-
+        
         if ($version_created) {
             return false;
         } else {

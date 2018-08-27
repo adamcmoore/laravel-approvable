@@ -106,13 +106,6 @@ interface ApprovableContract
     public function approvableParentModel();
 
 
-    /**
-     * The foriegn_key defined on the relation
-     *
-     * @return string
-     */
-    public function approvableParentRelationKey(): ? string;
-
 
     /**
      * The foriegn_id used in the relation
