@@ -132,7 +132,7 @@ trait Approvable
         $model = $this->approvableParentModel(); 
 
         if (!$model) return null; 
-        return  get_class($model); 
+        return  $model->getMorphClass(); 
     } 
  
  
@@ -172,11 +172,11 @@ trait Approvable
             'status'                 => Version::STATUS_DRAFT,
             'status_at'              => Carbon::now(),
             'is_deleting'            => $is_deleting,
-            'approvable_type'        => get_class($this),
+            'approvable_type'        => $this->getMorphClass(),
             'approvable_id'          => $this->id,
             'approvable_parent_type' => $this->approvableParentClass(),
             'approvable_parent_id'   => $this->approvableParentId(),
-            'user_type'              => ($user ? get_class($user) : null),
+            'user_type'              => ($user ? $user->getMorphClass() : null),
             'user_id'                => ($user ? $user->id : null),
             'values'                 => $values,
         ];
@@ -210,7 +210,7 @@ trait Approvable
                     'status_at'       => Carbon::now(),
                     'approvable_type' => $this->approvableParentClass(),
                     'approvable_id'   => $this->approvableParentId(),
-                    'user_type'       => ($user ? get_class($user) : null),
+                    'user_type'       => ($user ? $user->getMorphClass() : null),
                     'user_id'         => ($user ? $user->id : null),
                 ]);
             }
