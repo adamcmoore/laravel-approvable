@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Arr;
 
 use AcMoore\Approvable\Models\Version;
 use Carbon\Carbon;
@@ -93,7 +94,7 @@ trait Approvable
         $values = $this->getDirty(); 
         // If we're creating, then all data should be stored in the version 
         if ($this->exists) {
-            $values = array_only($values, $this->fieldsRequiringApproval()); 
+            $values = Arr::only($values, $this->fieldsRequiringApproval()); 
         }
  
         return $values;
@@ -141,7 +142,12 @@ trait Approvable
         $relation = $this->approvableParentRelation(); 
         if (!$relation) return null; 
   
-        $foreign_key = $relation->getForeignKey(); 
+        // L5.8 Support
+        if (method_exists($relation, 'getForeignKeyName')) {
+            $foreign_key = $relation->getForeignKeyName(); 
+        } else {
+            $foreign_key = $relation->getForeignKey(); 
+        }
 
         return object_get($this, $foreign_key); 
     } 

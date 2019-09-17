@@ -1,6 +1,8 @@
 ## Laravel Approvable
 A package to require the approval of changes to Eloquent Models.
 
+Supports Laravel versions 5.5 to 6.0.
+
 
 ### Quick Setup
 
@@ -85,5 +87,5 @@ $draft->apply();
 
 
 ### Todo
-[ ] Add support for creating & deleting non-relation records
-[ ] Test & support for other types of relations, other than belongsTo
+- [ ] Add support for creating & deleting non-relation records
+- [ ] Test & support for other types of relations, other than belongsTo
