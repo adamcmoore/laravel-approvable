@@ -32,6 +32,13 @@ class Article extends Model implements ApprovableContract
 		'title', 
 		'content',
 	];
+
+    
+    // Optionally set a datetime field on the model to be set with 
+    // the date that the draft was first approved. 
+    protected $timestamp_field_for_first_approved = 'approved_at';
+
+} 
 ```
 
 
@@ -75,7 +82,7 @@ $article = $article->has('draft')->with('versions')->first();
 $draft = $article->draft();
 
 // Set status of version as approved. Version remains as a draft.
-$draft->approve('Optional note regardig decision to approve');
+$draft->approve('Optional note regarding decision to approve');
 
 // Set status of version as rejected. Version is removed as a draft.
 $draft->reject('Optional note regardig decision to reject');
@@ -87,5 +94,5 @@ $draft->apply();
 
 
 ### Todo
-- [ ] Add support for creating & deleting non-relation records
+- [x] Add support for creating & deleting non-relation records
 - [ ] Test & support for other types of relations, other than belongsTo

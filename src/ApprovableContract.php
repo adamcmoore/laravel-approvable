@@ -17,6 +17,15 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 interface ApprovableContract
 {
+
+	/**
+	 * Get the field to use for marking the model as approved
+	 *
+	 * @return string|null
+	 */
+	public function timestampFieldForFirstApproved(): ?string;
+
+
     /**
      * Approvable Model versions.
      *
@@ -115,10 +124,12 @@ interface ApprovableContract
     public function approvableParentId(): ? int;
 
 
-    /**
-     * Create a draft version, if has new values requiring approval
-     *
-     * @return bool - Was a draft created?
-     */
-    public function createVersion(): bool;
+	/**
+	 * Create a draft version, if has new values requiring approval
+	 *
+	 * @param bool $is_deleting
+	 * @return bool - Was a draft created?
+	 */
+    public function createVersion(bool $is_deleting = false): bool;
+
 }

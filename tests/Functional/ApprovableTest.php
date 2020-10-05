@@ -9,17 +9,29 @@
  * with this source code.
  */
 
-namespace AcMoore\Approvable\Tests;
+namespace AcMoore\Approvable\Tests\Functional;
 
+use Illuminate\Support\Facades\Event;
+
+use AcMoore\Approvable\Tests\ApprovableTestCase;
+use AcMoore\Approvable\Tests\Events\AppliedEvent;
+use AcMoore\Approvable\Tests\Events\ApprovedEvent;
+use AcMoore\Approvable\Tests\Events\NewDraftEvent;
+use AcMoore\Approvable\Tests\Events\RejectedEvent;
 use AcMoore\Approvable\Tests\Models\Article;
 use AcMoore\Approvable\Tests\Models\User;
 use AcMoore\Approvable\Models\Version;
+
 
 class ApprovableTest extends ApprovableTestCase
 {
 
 	function testNotCreatingDraft()
 	{
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
         $article = factory(Article::class)->create();
 
 		$new_title = 'New Title';
@@ -30,11 +42,18 @@ class ApprovableTest extends ApprovableTestCase
 
 		$this->assertEquals($new_title, $article->title);
 		$this->assertEquals(0, count($article->versions));
+
+		// Check event was not fired
+		Event::assertNotDispatched(NewDraftEvent::class);
 	}
 
 
-	function testCreatingDraft()
+	function testCreatingDraftForExisting()
 	{
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
         $user = factory(User::class)->create();
         $article = factory(Article::class)->create();
 
@@ -52,7 +71,7 @@ class ApprovableTest extends ApprovableTestCase
 		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
-		
+
 		$this->assertNotEquals($new_title, $article->title);
 
 		$this->assertEquals(1, count($article->versions));
@@ -67,11 +86,56 @@ class ApprovableTest extends ApprovableTestCase
 
 		// Test that only fields marked as approvable are drafted
 		$this->assertArrayNotHasKey('published_at', $draft->values);
+
+		// Check event was fired
+		Event::assertDispatched(NewDraftEvent::class);
+	}
+
+
+	function testCreatingDraftForNew()
+	{
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
+        $user = factory(User::class)->create();
+        $article = factory(Article::class)->make();
+
+
+		$this->be($user);
+
+
+		Article::$requires_approval = true;
+
+		$article->save();
+
+		Article::$requires_approval = false;
+
+		$article = Article::with(['versions.user'])->find($article->id);
+
+		$this->assertEquals(1, count($article->versions));
+
+		$draft = $article->draft;
+
+		$this->assertEquals($user->id, $draft->user->id);
+
+		// Test that content is drafted
+		$this->assertArrayHasKey('content', $draft->values);
+
+		// Test that article is not approved
+		$this->assertNull($article->approved_at);
+
+		// Check event was fired
+		Event::assertDispatched(NewDraftEvent::class);
 	}
 
 
 	function testAnonymousDraft()
 	{
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
         $article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
@@ -80,7 +144,7 @@ class ApprovableTest extends ApprovableTestCase
 		$article->title = $new_title;
 		$article->published_at = new \DateTime();
 		$article->save();
-		
+
 		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
@@ -92,11 +156,21 @@ class ApprovableTest extends ApprovableTestCase
 
 		$this->assertEquals($new_title, $draft->values['title']);
 		$this->assertNull($draft->user);
+
+		// Test that article is not approved
+		$this->assertNull($article->approved_at);
+
+		// Check event was fired
+		Event::assertDispatched(NewDraftEvent::class);
 	}
 
 
 	function testNotCreatingDraftWhenNoChanges()
 	{
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
         $article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
@@ -105,19 +179,26 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article->published_at = $published_at; // Should not require approval
 		$article->save();
-		
+
 		Article::$requires_approval = false;
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
 		$this->assertEquals($published_at, $article->published_at);
 		$this->assertEquals(0, count($article->versions));
+
+		// Check event was not fired
+		Event::assertNotDispatched(NewDraftEvent::class);
 	}
 
 
 	function testUpdatingDraft()
 	{
-        $article = factory(Article::class)->create();
+		Event::fake([
+			NewDraftEvent::class,
+		]);
+
+		$article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
 
@@ -149,13 +230,20 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals(1, count($article->versions));
 		$this->assertEquals($new_title, $article->draft->values['title']);
 		$this->assertEquals($new_content, $article->draft->values['content']);
-		
+
 		Article::$requires_approval = false;
+
+		// Check event was fired
+		Event::assertDispatched(NewDraftEvent::class);
 	}
 
 
 	function testApprovingDraft()
 	{
+		Event::fake([
+			ApprovedEvent::class,
+		]);
+
 		$article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
@@ -163,7 +251,7 @@ class ApprovableTest extends ApprovableTestCase
 		$article->title = 'New Title';
 		$article->save();
 		$article->load('draft');
-		
+
 		Article::$requires_approval = false;
 
 		$notes = 'Looks good';
@@ -175,11 +263,21 @@ class ApprovableTest extends ApprovableTestCase
 		$version = $article->versions->first();
 		$this->assertEquals(Version::STATUS_APPROVED, $version->status);
 		$this->assertEquals($notes, $version->notes);
+
+		// Test that article is now set as approved
+		$this->assertNotNull($article->approved_at);
+
+		// Check event was fired
+		Event::assertDispatched(ApprovedEvent::class);
 	}
 
 
 	function testRejectingDraft()
 	{
+		Event::fake([
+			RejectedEvent::class,
+		]);
+
 		$article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
@@ -199,11 +297,18 @@ class ApprovableTest extends ApprovableTestCase
 		$version = $article->versions->first();
 		$this->assertEquals(Version::STATUS_REJECTED, $version->status);
 		$this->assertEquals($notes, $version->notes);
+
+		// Check event was fired
+		Event::assertDispatched(RejectedEvent::class);
 	}
 
 
 	function testApplyingVersion()
 	{
+		Event::fake([
+			AppliedEvent::class,
+		]);
+
 		$article = factory(Article::class)->create();
 
 		Article::$requires_approval = true;
@@ -226,7 +331,29 @@ class ApprovableTest extends ApprovableTestCase
 		$version = $article->versions->first();
 		$this->assertEquals(Version::STATUS_APPLIED, $version->status);
 		$this->assertEquals($new_title, $article->title);
+
+		// Check event was fired
+		Event::assertDispatched(AppliedEvent::class);
 	}
 
 
+	function testPreviewingVersion()
+	{
+		$article = factory(Article::class)->create();
+
+		Article::$requires_approval = true;
+
+		$new_title = uniqid();
+
+		$article->title = $new_title; // Should not require approval
+		$article->save();
+
+		Article::$requires_approval = false;
+
+		$article = Article::with(['versions.user'])->find($article->id);
+
+		$draft_preview = $article->draft->preview();
+		$this->assertInstanceOf(Article::class, $draft_preview);
+		$this->assertEquals($new_title, $draft_preview->title);
+	}
 }

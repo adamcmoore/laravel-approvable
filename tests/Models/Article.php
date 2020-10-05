@@ -32,10 +32,13 @@ class Article extends Model implements ApprovableContract
         'published_at',
     ];
 
-    public $approvable = [
+	protected $approvable = [
         'title',
         'content',
     ];
+
+    protected $timestamp_field_for_first_approved = 'approved_at';
+
 
     public function images()
     {

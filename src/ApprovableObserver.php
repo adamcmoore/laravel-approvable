@@ -28,7 +28,6 @@ class ApprovableObserver
         // Ignore the updated event when restoring
         if (static::$restoring) return;
 
-        
         $model->createVersion();
 
         // Continue the standard update for data which wasn't versioned
@@ -36,33 +35,18 @@ class ApprovableObserver
     }
 
 
-    public function creating(ApprovableContract $model)
+    public function created(ApprovableContract $model)
     {
-        $version_created = false;
-        // Only create a version for relation items
-        if ($model->approvableParentRelation()) {
-            $version_created = $model->createVersion();
-        }
+        $model->createVersion();
 
-        if ($version_created) {
-            return false;
-        } else {
-            return true;
-        }
+        return true;
     }
 
 
     public function deleting(ApprovableContract $model)
     {
-        $version_created = false;
-        if ($model->approvableParentRelation()) {
-            $version_created = $model->createVersion(true);
-        }
-        
-        if ($version_created) {
-            return false;
-        } else {
-            return true;
-        }
+    	$model->createVersion(true);
+
+        return true;
     }
 }

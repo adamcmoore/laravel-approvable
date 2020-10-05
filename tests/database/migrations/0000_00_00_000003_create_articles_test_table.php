@@ -26,6 +26,7 @@ class CreateArticlesTestTable extends Migration
             $table->string('title');
             $table->text('content');
             $table->timestamp('published_at')->nullable();
+            $table->timestamp('approved_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

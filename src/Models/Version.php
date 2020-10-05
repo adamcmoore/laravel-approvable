@@ -26,14 +26,15 @@ class Version extends Model
     protected $casts = [
         'values'      => 'json',
         'status_at'   => 'datetime',
+        'is_creating' => 'boolean',
         'is_deleting' => 'boolean',
     ];
 
-    const STATUS_DRAFT    = 'draft';
-    const STATUS_APPROVED = 'approved';
-    const STATUS_REJECTED = 'rejected';
-    const STATUS_APPLIED  = 'applied';
-    const STATUS_DROPPED  = 'dropped';
+    const STATUS_DRAFT    = 'draft';    // User's draft ready for approval
+    const STATUS_APPROVED = 'approved'; // Version approved, ready for applying to database
+    const STATUS_REJECTED = 'rejected'; // Version rejected, requires amends
+    const STATUS_APPLIED  = 'applied';  // Applied to database
+    const STATUS_DROPPED  = 'dropped';  // Draft ignored and deleted
 
 
     public function approvable()
@@ -61,10 +62,21 @@ class Version extends Model
         if (!is_null($notes)) {
             $this->notes = $notes;
         }
-        
+
         $result = $this->save();
 
         if ($result) {
+
+	        // Optionally set the timestamp when the first draft was approved
+	        $approved_field = $this->approvable->timestampFieldForFirstApproved();
+            if (!is_null($approved_field)) {
+		        $this->approvable[$approved_field] = Carbon::now();
+		        $this->approvable->save();
+	        }
+
+	        $this->approvable->fireModelEvent('approved', false);
+
+
             return $this;
         } else {
             return false;
@@ -79,10 +91,12 @@ class Version extends Model
         if (!is_null($notes)) {
             $this->notes = $notes;
         }
-        
+
         $result = $this->save();
 
         if ($result) {
+	        $this->approvable->fireModelEvent('rejected', false);
+
             return $this;
         } else {
             return false;
@@ -97,10 +111,12 @@ class Version extends Model
         if (!is_null($notes)) {
             $this->notes = $notes;
         }
-        
+
         $result = $this->save();
 
         if ($result) {
+	        $this->approvable->fireModelEvent('dropped', false);
+
             return $this;
         } else {
             return false;
@@ -112,15 +128,7 @@ class Version extends Model
     {
         // Deleting
         if ($this->is_deleting) {
-            $this->approvable->delete();    
-
-        // Creating
-        } elseif (is_null($this->approvable_id)) {
-            if (!is_null($this->values)) {
-                $approvable = new $this->approvable_type;
-                $approvable->fill($this->values);
-                $approvable->save();
-            }
+            $this->approvable->delete();
 
         // Updating
         } else {
@@ -140,11 +148,20 @@ class Version extends Model
         $result = $this->save();
 
         if ($result) {
+	        $this->approvable->fireModelEvent('applied', false);
+
             return $this;
         } else {
             return false;
-        }       
+        }
 
+    }
+
+
+    public function preview(): Model
+    {
+	    $this->approvable->fill($this->values);
+	    return $this->approvable;
     }
 }
 
