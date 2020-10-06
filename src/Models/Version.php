@@ -19,149 +19,162 @@ use Carbon\Carbon;
 
 class Version extends Model
 {
-    protected $table = 'approvable_versions';
+	protected $table = 'approvable_versions';
 
-    protected $guarded = [];
+	protected $guarded = [];
 
-    protected $casts = [
-        'values'      => 'json',
-        'status_at'   => 'datetime',
-        'is_creating' => 'boolean',
-        'is_deleting' => 'boolean',
-    ];
+	protected $casts = [
+		'values'      => 'json',
+		'status_at'   => 'datetime',
+		'is_creating' => 'boolean',
+		'is_deleting' => 'boolean',
+	];
 
-    const STATUS_DRAFT    = 'draft';    // User's draft ready for approval
-    const STATUS_APPROVED = 'approved'; // Version approved, ready for applying to database
-    const STATUS_REJECTED = 'rejected'; // Version rejected, requires amends
-    const STATUS_APPLIED  = 'applied';  // Applied to database
-    const STATUS_DROPPED  = 'dropped';  // Draft ignored and deleted
+	protected $appends = [
+		'preview'
+	];
 
-
-    public function approvable()
-    {
-        return $this->morphTo();
-    }
+	const STATUS_DRAFT    = 'draft';    // User's draft ready for approval
+	const STATUS_APPROVED = 'approved'; // Version approved, ready for applying to database
+	const STATUS_REJECTED = 'rejected'; // Version rejected, requires amends
+	const STATUS_APPLIED  = 'applied';  // Applied to database
+	const STATUS_DROPPED  = 'dropped';  // Draft ignored and deleted
 
 
-    public function approvable_parent()
-    {
-        return $this->morphTo();
-    }
+	public function approvable()
+	{
+		return $this->morphTo();
+	}
 
 
-    public function user()
-    {
-        return $this->morphTo();
-    }
+	public function approvable_parent()
+	{
+		return $this->morphTo();
+	}
 
 
-    public function approve(string $notes = null)
-    {
-        $this->status    = self::STATUS_APPROVED;
-        $this->status_at = Carbon::now();
-        if (!is_null($notes)) {
-            $this->notes = $notes;
-        }
-
-        $result = $this->save();
-
-        if ($result) {
-
-	        // Optionally set the timestamp when the first draft was approved
-	        $approved_field = $this->approvable->timestampFieldForFirstApproved();
-            if (!is_null($approved_field)) {
-		        $this->approvable[$approved_field] = Carbon::now();
-		        $this->approvable->save();
-	        }
-
-	        $this->approvable->fireModelEvent('approved', false);
+	public function user()
+	{
+		return $this->morphTo();
+	}
 
 
-            return $this;
-        } else {
-            return false;
-        }
-    }
+	public function approve(string $notes = null)
+	{
+		$this->status    = self::STATUS_APPROVED;
+		$this->status_at = Carbon::now();
+		if (!is_null($notes)) {
+			$this->notes = $notes;
+		}
+
+		$result = $this->save();
+
+		if ($result) {
+
+			// Optionally set the timestamp when the first draft was approved
+			$approved_field = $this->approvable->timestampFieldForFirstApproved();
+			if (!is_null($approved_field)) {
+				$this->approvable[$approved_field] = Carbon::now();
+				$this->approvable->save();
+			}
+
+			$this->approvable->fireModelEvent('approved', false);
 
 
-    public function reject(string $notes = null)
-    {
-        $this->status    = self::STATUS_REJECTED;
-        $this->status_at = Carbon::now();
-        if (!is_null($notes)) {
-            $this->notes = $notes;
-        }
-
-        $result = $this->save();
-
-        if ($result) {
-	        $this->approvable->fireModelEvent('rejected', false);
-
-            return $this;
-        } else {
-            return false;
-        }
-    }
+			return $this;
+		} else {
+			return false;
+		}
+	}
 
 
-    public function drop(string $notes = null)
-    {
-        $this->status    = self::STATUS_DROPPED;
-        $this->status_at = Carbon::now();
-        if (!is_null($notes)) {
-            $this->notes = $notes;
-        }
+	public function reject(string $notes = null)
+	{
+		$this->status    = self::STATUS_REJECTED;
+		$this->status_at = Carbon::now();
+		if (!is_null($notes)) {
+			$this->notes = $notes;
+		}
 
-        $result = $this->save();
+		$result = $this->save();
 
-        if ($result) {
-	        $this->approvable->fireModelEvent('dropped', false);
+		if ($result) {
+			$this->approvable->fireModelEvent('rejected', false);
 
-            return $this;
-        } else {
-            return false;
-        }
-    }
-
-
-    public function apply(string $notes = null)
-    {
-        // Deleting
-        if ($this->is_deleting) {
-            $this->approvable->delete();
-
-        // Updating
-        } else {
-            if (!is_null($this->values)) {
-                $this->approvable->fill($this->values);
-                $this->approvable->save();
-            }
-        }
+			return $this;
+		} else {
+			return false;
+		}
+	}
 
 
-        $this->status    = self::STATUS_APPLIED;
-        $this->status_at = Carbon::now();
-        if (!is_null($notes)) {
-            $this->notes = $notes;
-        }
+	public function drop(string $notes = null)
+	{
+		$this->status    = self::STATUS_DROPPED;
+		$this->status_at = Carbon::now();
+		if (!is_null($notes)) {
+			$this->notes = $notes;
+		}
 
-        $result = $this->save();
+		$result = $this->save();
 
-        if ($result) {
-	        $this->approvable->fireModelEvent('applied', false);
+		if ($result) {
+			$this->approvable->fireModelEvent('dropped', false);
 
-            return $this;
-        } else {
-            return false;
-        }
+			return $this;
+		} else {
+			return false;
+		}
+	}
 
-    }
+
+	public function apply(string $notes = null)
+	{
+		// Deleting
+		if ($this->is_deleting) {
+			$this->approvable->delete();
+
+			// Updating
+		} else {
+			if (!is_null($this->values)) {
+				$this->approvable->fill($this->values);
+				$this->approvable->save();
+			}
+		}
 
 
-    public function preview(): Model
-    {
-	    $this->approvable->fill($this->values);
-	    return $this->approvable;
-    }
+		$this->status    = self::STATUS_APPLIED;
+		$this->status_at = Carbon::now();
+		if (!is_null($notes)) {
+			$this->notes = $notes;
+		}
+
+		$result = $this->save();
+
+		if ($result) {
+			$this->approvable->fireModelEvent('applied', false);
+
+			return $this;
+		} else {
+			return false;
+		}
+
+	}
+
+
+	public function getPreviewAttribute(): ?Model
+	{
+		if (!$this->relationLoaded('approvable')) return null;
+
+		$this->approvable->fill($this->values);
+
+		// Reload any loaded relations
+		foreach ($this->approvable->relations as $key => $data) {
+			$this->approvable->unsetRelation($key);
+			$this->approvable->load($key);
+		}
+
+		return $this->approvable;
+	}
 }
 

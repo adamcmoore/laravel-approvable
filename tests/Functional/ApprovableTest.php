@@ -350,9 +350,10 @@ class ApprovableTest extends ApprovableTestCase
 
 		Article::$requires_approval = false;
 
-		$article = Article::with(['versions.user'])->find($article->id);
+		$article = Article::with(['draft.approvable'])->find($article->id);
 
-		$draft_preview = $article->draft->preview();
+		$draft_preview = $article->draft->preview;
+
 		$this->assertInstanceOf(Article::class, $draft_preview);
 		$this->assertEquals($new_title, $draft_preview->title);
 	}
