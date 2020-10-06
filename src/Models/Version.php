@@ -152,6 +152,14 @@ class Version extends Model
 		$result = $this->save();
 
 		if ($result) {
+
+			// Optionally set the timestamp when the first draft was approved
+			$approved_field = $this->approvable->timestampFieldForFirstApproved();
+			if (!is_null($approved_field)) {
+				$this->approvable[$approved_field] = Carbon::now();
+				$this->approvable->save();
+			}
+
 			$this->approvable->fireModelEvent('applied', false);
 
 			return $this;
