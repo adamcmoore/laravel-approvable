@@ -31,19 +31,19 @@ class Version extends Model
 	const STATUS_DROPPED  = 'dropped';  // Draft ignored and deleted
 
 
-	public function approvable()
+	public function approvable(): MorphTo
 	{
 		return $this->morphTo();
 	}
 
 
-	public function approvable_parent()
+	public function approvable_parent(): MorphTo
 	{
 		return $this->morphTo();
 	}
 
 
-	public function user()
+	public function user(): MorphTo
 	{
 		return $this->morphTo();
 	}
@@ -120,15 +120,35 @@ class Version extends Model
 
 	public function apply(string $notes = null)
 	{
+		$values = $this->values ?? [];
+		$approvable = $this->approvable;
+
+
+		// Optionally set the timestamp when the first draft was approved
+		$approved_field = (new $this->approvable_type())->timestampFieldForFirstApproved();
+		if (!is_null($approved_field)) {
+			$values[$approved_field] = Carbon::now();
+		}
+
+
+
 		// Deleting
 		if ($this->is_deleting) {
-			$this->approvable->delete();
+			$approvable->delete();
 
-			// Updating
+		// Creating
+		} elseif (is_null($this->approvable_id)) {
+			if (!empty($values)) {
+				$approvable = new $this->approvable_type;
+				$approvable->fill($values);
+				$approvable->save();
+			}
+
+		// Updating
 		} else {
-			if (!is_null($this->values)) {
-				$this->approvable->fill($this->values);
-				$this->approvable->save();
+			if (!empty($values)) {
+				$approvable->fill($values);
+				$approvable->save();
 			}
 		}
 
@@ -139,18 +159,12 @@ class Version extends Model
 			$this->notes = $notes;
 		}
 
+
 		$result = $this->save();
 
+
 		if ($result) {
-
-			// Optionally set the timestamp when the first draft was approved
-			$approved_field = $this->approvable->timestampFieldForFirstApproved();
-			if (!is_null($approved_field)) {
-				$this->approvable[$approved_field] = Carbon::now();
-				$this->approvable->save();
-			}
-
-			$this->approvable->fireModelEvent('applied', false);
+			$approvable->fireModelEvent('applied', false);
 
 			return $this;
 		} else {

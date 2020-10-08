@@ -25,18 +25,36 @@ class ApprovableObserver
     }
 
 
+    public function creating(ApprovableContract $model)
+    {
+	    $version_created = $model->createVersion();
+
+	    // Do not create related objects
+	    if ($version_created && $model->approvableParentRelation()) {
+		    return false;
+	    } else {
+		    return true;
+	    }
+    }
+
+
     public function created(ApprovableContract $model)
     {
-        $model->createVersion();
+	    $model->createVersion();
 
-        return true;
+	    return true;
     }
 
 
     public function deleting(ApprovableContract $model)
     {
-    	$model->createVersion(true);
+	    $version_created = $model->createVersion(true);
 
-        return true;
+	    // Do not delete related objects
+	    if ($version_created && $model->approvableParentRelation()) {
+		    return false;
+	    } else {
+		    return true;
+	    }
     }
 }
