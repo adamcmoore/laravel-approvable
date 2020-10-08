@@ -1,13 +1,4 @@
 <?php
-/**
- * This file is part of the Laravel Approvable package.
- *
- * @author     Adam Moore <adam@acmoore.co.uk>
- *
- * For the full copyright and license information,
- * please view the LICENSE.md file that was distributed
- * with this source code.
- */
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -28,7 +19,7 @@ class CreateArticleImagesTestTable extends Migration
             $table->string('title');
             $table->timestamps();
 
-            $table->index(['article_id']);   
+            $table->index(['article_id']);
         });
     }
 

@@ -1,13 +1,4 @@
 <?php
-/**
- * This file is part of the Laravel Approvable package.
- *
- * @author     Adam Moore <adam@acmoore.co.uk>
- *
- * For the full copyright and license information,
- * please view the LICENSE.md file that was distributed
- * with this source code.
- */
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -35,14 +26,14 @@ class CreateVersionsTestTable extends Migration
 
             $table->integer('user_id')->unsigned()->nullable();
             $table->string('user_type')->nullable();
-            
+
             $table->text('values')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['approvable_id', 'approvable_type'], 'approvable'); 
-            $table->index(['approvable_parent_id', 'approvable_parent_type'], 'approvable_parent'); 
-            $table->index(['user_id', 'user_type']);    
+            $table->index(['approvable_id', 'approvable_type'], 'approvable');
+            $table->index(['approvable_parent_id', 'approvable_parent_type'], 'approvable_parent');
+            $table->index(['user_id', 'user_type']);
         });
     }
 
