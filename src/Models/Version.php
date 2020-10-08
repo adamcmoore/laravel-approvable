@@ -58,9 +58,10 @@ class Version extends Model
 		}
 
 		$result = $this->save();
+		if (!$result) return false;
 
-		if ($result) {
 
+		if ($this->approvable) {
 			// Optionally set the timestamp when the first draft was approved
 			$approved_field = $this->approvable->timestampFieldForFirstApproved();
 			if (!is_null($approved_field)) {
@@ -69,12 +70,9 @@ class Version extends Model
 			}
 
 			$this->approvable->fireModelEvent('approved', false);
-
-
-			return $this;
-		} else {
-			return false;
 		}
+
+		return $this;
 	}
 
 
@@ -87,14 +85,14 @@ class Version extends Model
 		}
 
 		$result = $this->save();
+		if (!$result) return false;
 
-		if ($result) {
+
+		if ($this->approvable) {
 			$this->approvable->fireModelEvent('rejected', false);
-
-			return $this;
-		} else {
-			return false;
 		}
+
+		return $this;
 	}
 
 
@@ -107,14 +105,14 @@ class Version extends Model
 		}
 
 		$result = $this->save();
+		if (!$result) return false;
 
-		if ($result) {
+
+		if ($this->approvable) {
 			$this->approvable->fireModelEvent('dropped', false);
-
-			return $this;
-		} else {
-			return false;
 		}
+
+		return $this;
 	}
 
 
@@ -123,31 +121,32 @@ class Version extends Model
 		$values = $this->values ?? [];
 		$approvable = $this->approvable;
 
-
 		// Optionally set the timestamp when the first draft was approved
 		$approved_field = (new $this->approvable_type())->timestampFieldForFirstApproved();
-		if (!is_null($approved_field)) {
-			$values[$approved_field] = Carbon::now();
-		}
-
 
 
 		// Deleting
 		if ($this->is_deleting) {
 			$approvable->delete();
 
-		// Creating
+			// Creating
 		} elseif (is_null($this->approvable_id)) {
 			if (!empty($values)) {
 				$approvable = new $this->approvable_type;
 				$approvable->fill($values);
+				if (!is_null($approved_field)) {
+					$approvable->$approved_field = Carbon::now();
+				}
 				$approvable->save();
 			}
 
-		// Updating
+			// Updating
 		} else {
 			if (!empty($values)) {
 				$approvable->fill($values);
+				if (!is_null($approved_field)) {
+					$approvable->$approved_field = Carbon::now();
+				}
 				$approvable->save();
 			}
 		}
@@ -161,16 +160,13 @@ class Version extends Model
 
 
 		$result = $this->save();
+		if (!$result) return false;
 
 
-		if ($result) {
-			$approvable->fireModelEvent('applied', false);
 
-			return $this;
-		} else {
-			return false;
-		}
+		$approvable->fireModelEvent('applied', false);
 
+		return $this;
 	}
 
 

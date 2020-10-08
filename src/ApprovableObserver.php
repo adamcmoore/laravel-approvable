@@ -5,56 +5,59 @@ namespace AcMoore\Approvable;
 class ApprovableObserver
 {
 
-    /**
-     * Is the model being restored?
-     *
-     * @var bool
-     */
-    public static $restoring = false;
+	/**
+	 * Is the model being restored?
+	 *
+	 * @var bool
+	 */
+	public static $restoring = false;
 
 
-    public function updating(ApprovableContract $model)
-    {
-        // Ignore the updated event when restoring
-        if (static::$restoring) return;
+	public function updating(ApprovableContract $model)
+	{
+		// Ignore the updated event when restoring
+		if (static::$restoring) return;
 
-        $model->createVersion();
+		$model->createVersion();
 
-        // Continue the standard update for data which wasn't versioned
-        return true;
-    }
-
-
-    public function creating(ApprovableContract $model)
-    {
-	    $version_created = $model->createVersion();
-
-	    // Do not create related objects
-	    if ($version_created && $model->approvableParentRelation()) {
-		    return false;
-	    } else {
-		    return true;
-	    }
-    }
+		// Do not return anything - doing so will block other
+		// observers from running
+	}
 
 
-    public function created(ApprovableContract $model)
-    {
-	    $model->createVersion();
+	public function creating(ApprovableContract $model)
+	{
+		$version_created = $model->createVersion();
 
-	    return true;
-    }
+		// Do not create related objects
+		if ($version_created && $model->approvableParentRelation()) {
+			return false;
+		} else {
+			// Do not return anything - doing so will block other
+			// observers from running
+		}
+	}
 
 
-    public function deleting(ApprovableContract $model)
-    {
-	    $version_created = $model->createVersion(true);
+	public function created(ApprovableContract $model)
+	{
+		$model->createVersion();
 
-	    // Do not delete related objects
-	    if ($version_created && $model->approvableParentRelation()) {
-		    return false;
-	    } else {
-		    return true;
-	    }
-    }
+		// Do not return anything - doing so will block other
+		// observers from running
+	}
+
+
+	public function deleting(ApprovableContract $model)
+	{
+		$version_created = $model->createVersion(true);
+
+		// Do not delete related objects
+		if ($version_created && $model->approvableParentRelation()) {
+			return false;
+		} else {
+			// Do not return anything - doing so will block other
+			// observers from running
+		}
+	}
 }
