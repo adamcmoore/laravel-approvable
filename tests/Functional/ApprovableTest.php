@@ -61,14 +61,14 @@ class ApprovableTest extends ApprovableTestCase
 		$this->be($user);
 
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$new_title = 'New Title';
 		$article->title = $new_title;
 		$article->published_at = new \DateTime();
 		$article->save();
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -105,11 +105,11 @@ class ApprovableTest extends ApprovableTestCase
 		$this->be($user);
 
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$article->save();
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -138,14 +138,14 @@ class ApprovableTest extends ApprovableTestCase
 
         $article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$new_title = 'New Title';
 		$article->title = $new_title;
 		$article->published_at = new \DateTime();
 		$article->save();
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -173,14 +173,14 @@ class ApprovableTest extends ApprovableTestCase
 
         $article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$published_at = $this->faker->dateTime();
 
 		$article->published_at = $published_at; // Should not require approval
 		$article->save();
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
@@ -200,7 +200,7 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 
 		$new_title = 'New Title 1';
@@ -231,7 +231,7 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals($new_title, $article->draft->values['title']);
 		$this->assertEquals($new_content, $article->draft->values['content']);
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		// Check event was fired
 		Event::assertDispatched(NewDraftEvent::class);
@@ -246,13 +246,13 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$article->title = 'New Title';
 		$article->save();
 		$article->load('draft');
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$notes = 'Looks good';
 		$article->draft->approve($notes);
@@ -280,13 +280,13 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$article->title = 'New Title';
 		$article->save();
 		$article->load('draft');
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$notes = 'No good';
 		$article->draft->reject($notes);
@@ -311,14 +311,14 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$new_title = 'New Title';
 		$article->title = $new_title;
 		$article->save();
 		$article->load('draft');
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article->draft->approve();
 
@@ -341,14 +341,14 @@ class ApprovableTest extends ApprovableTestCase
 	{
 		$article = factory(Article::class)->create();
 
-		Article::$requires_approval = true;
+		Article::enableApproval();
 
 		$new_title = uniqid();
 
 		$article->title = $new_title; // Should not require approval
 		$article->save();
 
-		Article::$requires_approval = false;
+		Article::disableApproval();
 
 		$article = Article::with(['draft.approvable'])->find($article->id);
 

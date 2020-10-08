@@ -64,7 +64,7 @@ interface ApprovableContract
      *
      * @return bool
      */
-    public function enabled(): bool;
+    public function isApprovalEnabled(): bool;
 
 
     /**

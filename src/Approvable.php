@@ -88,9 +88,21 @@ trait Approvable
     }
 
 
-    public function enabled(): bool
+    public function isApprovalEnabled(): bool
     {
     	return static::$requires_approval;
+    }
+
+
+    public static function enableApproval(): void
+    {
+    	static::$requires_approval = true;
+    }
+
+
+    public static function disableApproval(): void
+    {
+    	static::$requires_approval = false;
     }
 
 
@@ -176,7 +188,7 @@ trait Approvable
     public function createVersion(bool $is_deleting = false): bool
     {
     	// Only take a draft if setup to do so and has data to version
-        if (!$this->enabled()) return false;
+        if (!$this->isApprovalEnabled()) return false;
 
 		$user = Auth::user();
         $values = null;
