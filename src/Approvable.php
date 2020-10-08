@@ -174,12 +174,7 @@ trait Approvable
         $relation = $this->approvableParentRelation();
         if (!$relation) return null;
 
-        // L5.8 Support
-        if (method_exists($relation, 'getForeignKeyName')) {
             $foreign_key = $relation->getForeignKeyName();
-        } else {
-            $foreign_key = $relation->getForeignKey();
-        }
 
         return object_get($this, $foreign_key);
     }
