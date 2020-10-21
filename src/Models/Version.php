@@ -16,12 +16,13 @@ class Version extends Model
 	protected $casts = [
 		'values'      => 'json',
 		'status_at'   => 'datetime',
-		'is_creating' => 'boolean',
+		'is_created'  => 'boolean',
 		'is_deleting' => 'boolean',
 	];
 
 	protected $appends = [
-		'preview'
+		'preview',
+		'diff',
 	];
 
 	const STATUS_DRAFT    = 'draft';    // User's draft ready for approval
@@ -33,13 +34,13 @@ class Version extends Model
 
 	public function approvable(): MorphTo
 	{
-		return $this->morphTo();
+		return $this->morphTo()->withTrashed();
 	}
 
 
 	public function approvable_parent(): MorphTo
 	{
-		return $this->morphTo();
+		return $this->morphTo()->withTrashed();
 	}
 
 
@@ -174,6 +175,7 @@ class Version extends Model
 	{
 		if (!$this->relationLoaded('approvable')) return null;
 
+
 		$this->approvable->fill($this->values);
 
 		// Reload any loaded relations
@@ -183,6 +185,51 @@ class Version extends Model
 		}
 
 		return $this->approvable;
+	}
+
+	public function getDiffAttribute(): ?object
+	{
+		if (!$this->relationLoaded('approvable')) return null;
+
+
+		$new = new $this->approvable_type;
+		if (!$this->is_deleting) {
+			$new->fill($this->values);
+		}
+
+
+		if ($this->is_created) {
+			$old = new $this->approvable_type;;
+		} else {
+			$old = $this->approvable;
+		}
+
+
+		// Get all possible fields
+		$fields = array_keys(array_merge($new->toArray(), $old->toArray()));
+
+		// Build a diff object
+		$diff = [];
+		foreach ($fields as $field) {
+			$old_val = object_get($old, $field);
+			$new_val = object_get($new, $field);
+
+			// If the calue hasn't been drafted, and we're not deleting,
+			// then ignore the field
+			if (!$this->is_deleting && !array_key_exists($field, $this->values)) {
+				continue;
+			}
+
+			if ($old_val !== $new_val) {
+				$diff[$field] = (object) [
+					'old' => $old_val,
+					'new' => $new_val,
+				];
+			}
+		}
+
+
+		return (object) $diff;
 	}
 }
 

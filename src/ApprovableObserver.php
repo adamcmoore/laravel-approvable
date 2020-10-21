@@ -41,7 +41,7 @@ class ApprovableObserver
 
 	public function created(ApprovableContract $model)
 	{
-		$model->createVersion();
+		$model->createVersion(false, true);
 
 		// Do not return anything - doing so will block other
 		// observers from running

@@ -170,7 +170,7 @@ trait Approvable
     }
 
 
-    public function createVersion(bool $is_deleting = false): bool
+    public function createVersion(bool $is_deleting = false, bool $is_created = false): bool
     {
     	// Only take a draft if setup to do so and has data to version
         if (!$this->isApprovalEnabled()) return false;
@@ -192,6 +192,7 @@ trait Approvable
             'status'                 => Version::STATUS_DRAFT,
             'status_at'              => Carbon::now(),
             'is_deleting'            => $is_deleting,
+            'is_created'             => $is_created,
             'approvable_type'        => $this->getMorphClass(),
             'approvable_id'          => $this->getKey(),
             'approvable_parent_type' => $this->approvableParentClass(),

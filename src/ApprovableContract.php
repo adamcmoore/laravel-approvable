@@ -118,8 +118,9 @@ interface ApprovableContract
 	 * Create a draft version, if has new values requiring approval
 	 *
 	 * @param bool $is_deleting
+	 * @param bool $is_created
 	 * @return bool - Was a draft created?
 	 */
-    public function createVersion(bool $is_deleting = false): bool;
+    public function createVersion(bool $is_deleting = false, bool $is_created = false): bool;
 
 }

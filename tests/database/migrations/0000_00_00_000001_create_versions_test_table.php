@@ -17,6 +17,7 @@ class CreateVersionsTestTable extends Migration
             $table->string('status');
             $table->datetime('status_at')->useCurrent();
             $table->boolean('is_deleting')->default(0);
+            $table->boolean('is_created')->default(0);
 
             $table->integer('approvable_id')->unsigned()->nullable();
             $table->string('approvable_type')->nullable();

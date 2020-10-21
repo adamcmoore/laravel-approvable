@@ -335,7 +335,7 @@ class ApprovableTest extends ApprovableTestCase
 
 		$new_title = uniqid();
 
-		$article->title = $new_title; // Should not require approval
+		$article->title = $new_title;
 		$article->save();
 
 		Article::disableApproval();
@@ -346,5 +346,76 @@ class ApprovableTest extends ApprovableTestCase
 
 		$this->assertInstanceOf(Article::class, $draft_preview);
 		$this->assertEquals($new_title, $draft_preview->title);
+	}
+
+
+	function testVersionDiff()
+	{
+		Article::enableApproval();
+
+		// Test Creating Approvable
+		// ====================================================================
+		$article = factory(Article::class)->create();
+		$article = Article::with(['draft.approvable'])->find($article->id);
+
+		$this->assertTrue($article->draft->is_created);
+		$this->assertFalse($article->draft->is_deleting);
+
+		$draft_diff = $article->draft->diff;
+
+		$this->assertObjectHasAttribute('title', $draft_diff);
+		$this->assertObjectHasAttribute('new', $draft_diff->title);
+		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertNull($draft_diff->title->old);
+		$this->assertEquals($article->title, $draft_diff->title->new);
+		$this->assertObjectHasAttribute('content', $draft_diff);
+		$this->assertObjectHasAttribute('new', $draft_diff->content);
+		$this->assertObjectHasAttribute('old', $draft_diff->content);
+		$this->assertNull($draft_diff->content->old);
+		$this->assertEquals($article->content, $draft_diff->content->new);
+
+
+		// Test Updating Approvable
+		// ====================================================================
+		$old_title = $article->title;
+		$new_title = uniqid();
+		$article->title = $new_title;
+		$article->save();
+
+		$article = Article::with(['draft.approvable'])->find($article->id);
+
+		$this->assertFalse($article->draft->is_created);
+		$this->assertFalse($article->draft->is_deleting);
+
+		$draft_diff = $article->draft->diff;
+
+		$this->assertObjectHasAttribute('title', $draft_diff);
+		$this->assertObjectHasAttribute('new', $draft_diff->title);
+		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertEquals($old_title, $draft_diff->title->old);
+		$this->assertEquals($new_title, $draft_diff->title->new);
+		$this->assertObjectNotHasAttribute('content', $draft_diff);
+
+
+		// Test Deleting Approvable
+		// ====================================================================
+		$article->delete();
+
+		$article = Article::withTrashed()->with(['draft.approvable'])->find($article->id);
+		$draft_diff = $article->draft->diff;
+
+		$this->assertObjectHasAttribute('title', $draft_diff);
+		$this->assertObjectHasAttribute('new', $draft_diff->title);
+		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertNull($draft_diff->title->new);
+		$this->assertEquals($article->title, $draft_diff->title->old);
+		$this->assertObjectHasAttribute('content', $draft_diff);
+		$this->assertObjectHasAttribute('new', $draft_diff->content);
+		$this->assertObjectHasAttribute('old', $draft_diff->content);
+		$this->assertNull($draft_diff->content->new);
+		$this->assertEquals($article->content, $draft_diff->content->old);
+
+
+		Article::disableApproval();
 	}
 }
