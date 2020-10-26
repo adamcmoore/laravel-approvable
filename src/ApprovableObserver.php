@@ -20,22 +20,19 @@ class ApprovableObserver
 
 		$model->createVersion();
 
-		// Do not return anything - doing so will block other
-		// observers from running
+		// Do not return anything - doing so will block other observers from running
 	}
 
 
 	public function creating(ApprovableContract $model)
 	{
-		$version_created = $model->createVersion();
-
 		// Do not create related objects
-		if ($version_created && $model->approvableParentRelation()) {
-			return false;
-		} else {
-			// Do not return anything - doing so will block other
-			// observers from running
+		if ($model->approvableParentRelation()) {
+			$version_created = $model->createVersion();
+			if ($version_created) return false;
 		}
+
+		// Do not return anything - doing so will block other observers from running
 	}
 
 
@@ -43,8 +40,7 @@ class ApprovableObserver
 	{
 		$model->createVersion(false, true);
 
-		// Do not return anything - doing so will block other
-		// observers from running
+		// Do not return anything - doing so will block other observers from running
 	}
 
 
@@ -55,9 +51,8 @@ class ApprovableObserver
 		// Do not delete related objects
 		if ($version_created && $model->approvableParentRelation()) {
 			return false;
-		} else {
-			// Do not return anything - doing so will block other
-			// observers from running
 		}
+
+		// Do not return anything - doing so will block other observers from running
 	}
 }

@@ -175,16 +175,16 @@ class Version extends Model
 	{
 		if (!$this->relationLoaded('approvable')) return null;
 
-
-		$this->approvable->fill($this->values);
+		$approvable = $this->approvable->replicate();
+		$approvable->fill($this->values);
 
 		// Reload any loaded relations
-		foreach ($this->approvable->relations as $key => $data) {
-			$this->approvable->unsetRelation($key);
-			$this->approvable->load($key);
+		foreach ($approvable->relations as $key => $data) {
+			$approvable->unsetRelation($key);
+			$approvable->load($key);
 		}
 
-		return $this->approvable;
+		return $approvable;
 	}
 
 	public function getDiffAttribute(): ?object
