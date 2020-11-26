@@ -191,8 +191,6 @@ class ApprovableTest extends ApprovableTestCase
 		$article = factory(Article::class)->create();
 
 		Article::enableApproval();
-
-
 		$new_title = 'New Title 1';
 		$article->title = $new_title;
 		$article->save();
@@ -202,6 +200,7 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals($new_title, $article->draft->values['title']);
 
 
+		Article::enableApproval();
 		$new_content = 'New Content';
 		$article->content = $new_content;
 		$article->save();
@@ -212,6 +211,7 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals($new_content, $article->draft->values['content']);
 
 
+		Article::enableApproval();
 		$new_title = 'New Title 2';
 		$article->title = $new_title;
 		$article->save();
@@ -221,7 +221,6 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertEquals($new_title, $article->draft->values['title']);
 		$this->assertEquals($new_content, $article->draft->values['content']);
 
-		Article::disableApproval();
 
 		// Check event was fired
 		Event::assertDispatched(NewDraftEvent::class);
