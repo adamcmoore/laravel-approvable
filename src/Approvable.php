@@ -62,6 +62,30 @@ trait Approvable
 	}
 
 
+	public function new_draft(): MorphOne
+	{
+		return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
+			Models\Version::STATUS_DRAFT,
+		]);
+	}
+
+
+	public function rejected_draft(): MorphOne
+	{
+		return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
+			Models\Version::STATUS_REJECTED,
+		]);
+	}
+
+
+	public function approved_draft(): MorphOne
+	{
+		return $this->morphOne(Models\Version::class, 'approvable')->whereIn('status', [
+			Models\Version::STATUS_APPROVED,
+		]);
+	}
+
+
 	public function related_versions(): MorphMany
 	{
 		return $this->morphMany(Models\Version::class, 'approvable_parent');
