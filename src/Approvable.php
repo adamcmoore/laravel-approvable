@@ -207,7 +207,6 @@ trait Approvable
 		if (!$is_deleting) {
 			// If nothing has changed which we need to draft for, then continue regular save
 			if (!$this->requiresApproval()) {
-				self::disableApproval();
 				return false;
 			}
 
@@ -280,8 +279,6 @@ trait Approvable
 		// Fire the event to broadcast that a new draft has been created
 		$this->fireModelEvent('new_draft', false);
 
-
-		self::disableApproval();
 
 		return true;
 	}
