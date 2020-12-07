@@ -50,6 +50,18 @@ class Version extends Model
 	}
 
 
+	public function reset()
+	{
+		$this->status    = self::STATUS_DRAFT;
+		$this->status_at = Carbon::now();
+
+		$result = $this->save();
+		if (!$result) return false;
+
+		return $this;
+	}
+
+
 	public function approve(string $notes = null)
 	{
 		$this->status    = self::STATUS_APPROVED;
@@ -63,14 +75,14 @@ class Version extends Model
 
 
 		if ($this->approvable) {
+			$this->approvable->fireModelEvent('approved', false);
+
 			// Optionally set the timestamp when the first draft was approved
 			$approved_field = $this->approvable->timestampFieldForFirstApproved();
 			if (!is_null($approved_field)) {
 				$this->approvable[$approved_field] = Carbon::now();
 				$this->approvable->save();
 			}
-
-			$this->approvable->fireModelEvent('approved', false);
 		}
 
 		return $this;
@@ -220,12 +232,10 @@ class Version extends Model
 				continue;
 			}
 
-			if ($old_val !== $new_val) {
-				$diff[$field] = (object) [
-					'old' => $old_val,
-					'new' => $new_val,
-				];
-			}
+			$diff[$field] = (object) [
+				'old' => $old_val,
+				'new' => $new_val,
+			];
 		}
 
 
