@@ -215,6 +215,7 @@ class ApprovableTest extends ApprovableTestCase
 		$new_title = 'New Title 2';
 		$article->title = $new_title;
 		$article->save();
+		Article::disableApproval();
 		$article = Article::with(['versions', 'draft'])->find($article->id);
 
 		$this->assertEquals(1, count($article->versions));
@@ -393,7 +394,6 @@ class ApprovableTest extends ApprovableTestCase
 		$this->assertObjectHasAttribute('old', $draft_diff->title);
 		$this->assertEquals($old_title, $draft_diff->title->old);
 		$this->assertEquals($new_title, $draft_diff->title->new);
-		$this->assertObjectNotHasAttribute('content', $draft_diff);
 
 
 		// Test Deleting Approvable
