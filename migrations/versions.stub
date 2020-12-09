@@ -26,6 +26,7 @@ class CreateApprovableVersionsTable extends Migration
             $table->increments('id');
             $table->string('status');
             $table->datetime('status_at')->useCurrent();
+            $table->boolean('is_created')->default(0);
             $table->boolean('is_deleting')->default(0);
 
             $table->integer('approvable_id')->unsigned()->nullable();
@@ -41,9 +42,9 @@ class CreateApprovableVersionsTable extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['approvable_id', 'approvable_type'], 'approvable'); 
-            $table->index(['approvable_parent_id', 'approvable_parent_type'], 'approvable_parent'); 
-            $table->index(['user_id', 'user_type']); 
+            $table->index(['approvable_id', 'approvable_type'], 'approvable');
+            $table->index(['approvable_parent_id', 'approvable_parent_type'], 'approvable_parent');
+            $table->index(['user_id', 'user_type']);
         });
     }
 

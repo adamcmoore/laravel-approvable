@@ -1,14 +1,4 @@
 <?php
-/**
- * This file is part of the Laravel Approvable package.
- *
- * @author     Adam Moore <adam@acmoore.co.uk>
- *
- * For the full copyright and license information,
- * please view the LICENSE.md file that was distributed
- * with this source code.
- */
-
 namespace AcMoore\Approvable\Tests\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -32,10 +22,13 @@ class Article extends Model implements ApprovableContract
         'published_at',
     ];
 
-    public $approvable = [
+	protected $approvable = [
         'title',
         'content',
     ];
+
+    protected $timestamp_field_for_first_approved = 'approved_at';
+
 
     public function images()
     {

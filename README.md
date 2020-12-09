@@ -4,7 +4,7 @@ A package to require the approval of changes to Eloquent Models.
 Supports Laravel versions 5.5 to 6.0.
 
 
-### Quick Setup
+### Setup
 
 #### Require Package
 `composer require adamcmoore/laravel-approvable`
@@ -22,16 +22,23 @@ use AcMoore\Approvable\ApprovableContract;
 
 class Article extends Model implements ApprovableContract
 {
-	use Approvable;
+    use Approvable;
+    
+    // Only fields set as approvable will be used when considering 
+    // if a new version is required, and only these fields will be 
+    // stored in the new version. If this isn't set, the $fillable 
+    // fields are used.
+    public $approvable = [
+        'title', 
+        'content',
+    ];
+    
+    
+    // Optionally set a datetime field on the model to be set with 
+    // the date that the draft was first approved. 
+    protected $timestamp_field_for_first_approved = 'approved_at';
 
-	// Only fields set as approvable will be used when considering 
-	// if a new version is required, and only these fields will be 
-	// stored in the new version. If this isn't set, the $fillable 
-	// fields are used.
-	public $approvable = [
-		'title', 
-		'content',
-	];
+} 
 ```
 
 
@@ -43,49 +50,65 @@ use AcMoore\Approvable\ApprovableContract;
 
 class ArticleImage extends Model implements ApprovableContract
 {
-	use Approvable;
-
-	public $approvable = [
-		'file_url', 
-	];
-
-	// Set the name of the parent relation.
-	// Currently only belongsTo has been tested
-	public $approvable_parent = 'article';
-
+    use Approvable;
+    
+    public $approvable = [
+        'file_url', 
+    ];
+    
+    // Set the name of the parent relation.
+    // Currently only belongsTo has been tested
+    public $approvable_parent = 'article';
+    
     public function article()
     {
         return $this->belongsTo(Article::class);
     }
+}
 ```
 
 
-#### Usage example
+### Usage example
 ```
 $article = Article::find(1)->get();
 $article->title = 'New Title';
 
-Article::$requires_approval = true; 
+Article::enableApproval(); 
 $article->save();
-Article::$requires_approval = false; 
+Article::disableApproval();
 ```
 ...
 ```
 $article = $article->has('draft')->with('versions')->first();
-$draft = $article->draft();
+
+// The version with a status of draft, rejected, or approved
+$draft = $article->draft;
+
+// An Article model with the draft values filled
+$preview = $article->draft->preview;
 
 // Set status of version as approved. Version remains as a draft.
-$draft->approve('Optional note regardig decision to approve');
+$draft->approve('Optional note regarding decision to approve');
 
 // Set status of version as rejected. Version is removed as a draft.
-$draft->reject('Optional note regardig decision to reject');
+$draft->reject('Optional note regarding decision to reject');
 
-// Set status of version as rejected and apply update, creation or deletion. 
-// Version is no longer considered as a draft.
-$draft->apply();
+// Write the draft to the database object
+$draft->apply('Optional note regarding decision to apply');
+
+// Ignore the draft
+$draft->drop('Optional note regarding decision to drop');
 ```
 
+### Eloquent Model Events
+Model events are fired on the Approvable Model when the status of its draft changes. 
+These can be listened to with an Observer. Events triggered are:
+- `new_draft`
+- `approved`
+- `rejected`
+- `dropped`
+- `applied`
 
 ### Todo
-- [ ] Add support for creating & deleting non-relation records
+- [x] Add support for creating & deleting non-relation records
 - [ ] Test & support for other types of relations, other than belongsTo

@@ -1,14 +1,4 @@
 <?php
-/**
- * This file is part of the Laravel Approvable package.
- *
- * @author     Adam Moore <adam@acmoore.co.uk>
- *
- * For the full copyright and license information,
- * please view the LICENSE.md file that was distributed
- * with this source code.
- */
-
 namespace AcMoore\Approvable;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -17,6 +7,15 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 interface ApprovableContract
 {
+
+	/**
+	 * Get the field to use for marking the model as approved
+	 *
+	 * @return string|null
+	 */
+	public function timestampFieldForFirstApproved(): ?string;
+
+
     /**
      * Approvable Model versions.
      *
@@ -55,7 +54,7 @@ interface ApprovableContract
      *
      * @return bool
      */
-    public function enabled(): bool;
+    public function isApprovalEnabled(): bool;
 
 
     /**
@@ -115,10 +114,13 @@ interface ApprovableContract
     public function approvableParentId(): ? int;
 
 
-    /**
-     * Create a draft version, if has new values requiring approval
-     *
-     * @return bool - Was a draft created?
-     */
-    public function createVersion(): bool;
+	/**
+	 * Create a draft version, if has new values requiring approval
+	 *
+	 * @param bool $is_deleting
+	 * @param bool $is_created
+	 * @return bool - Was a draft created?
+	 */
+    public function createVersion(bool $is_deleting = false, bool $is_created = false): bool;
+
 }

@@ -1,18 +1,10 @@
 <?php
-/**
- * This file is part of the Laravel Approvable package.
- *
- * @author     Adam Moore <adam@acmoore.co.uk>
- *
- * For the full copyright and license information,
- * please view the LICENSE.md file that was distributed
- * with this source code.
- */
-
 namespace AcMoore\Approvable\Tests;
 
 use AcMoore\Approvable\ApprovableServiceProvider;
 
+use AcMoore\Approvable\Tests\Models\Article;
+use AcMoore\Approvable\Tests\Observers\ArticleObserver;
 use Orchestra\Database\ConsoleServiceProvider;
 use Orchestra\Testbench\TestCase;
 use Faker\Factory as Faker;
@@ -39,6 +31,8 @@ class ApprovableTestCase extends TestCase
 
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->withFactories(__DIR__.'/database/factories');
+
+	    Article::observe(ArticleObserver::class);
     }
 
 
