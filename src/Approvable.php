@@ -2,6 +2,7 @@
 namespace AcMoore\Approvable;
 
 
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -190,7 +191,13 @@ trait Approvable
 
 		$foreign_key = $relation->getForeignKeyName();
 
-		return object_get($this, $foreign_key);
+		if (get_class($relation) === HasOneThrough::class) {
+			$through = $this->{$this->approvableParent()};
+			return object_get($through, $foreign_key);
+		} else {
+			return object_get($this, $foreign_key);
+		}
+
 	}
 
 
@@ -249,20 +256,28 @@ trait Approvable
 
 
 		// If the parent doesn't already have a draft, create one
-		if ($this->approvableParentClass()) {
-			$parent_draft_relation = $this->approvableParent() .'.draft';
-			$this->load($parent_draft_relation);
-			if (!object_get($this, $parent_draft_relation)) {
-				Version::create([
-					'status'          => Version::STATUS_DRAFT,
-					'status_at'       => Carbon::now(),
-					'approvable_type' => $this->approvableParentClass(),
-					'approvable_id'   => $this->approvableParentId(),
-					'user_type'       => ($user ? $user->getMorphClass() : null),
-					'user_id'         => ($user ? $user->id : null),
-				]);
-			}
-		}
+		// Now supporting recursion 🎉
+		$create_draft_for_parent = function($child) use ($user, &$create_draft_for_parent) {
+			$parent = $child->{$child->approvableParent()};
+			if (!$parent) return;
+
+			$parent->load('draft');
+			if (object_get($parent, 'draft')) return;
+
+			Version::create([
+				'status'          		 => Version::STATUS_DRAFT,
+				'status_at'       		 => Carbon::now(),
+				'approvable_type'        => $parent->getMorphClass(),
+				'approvable_id'          => $parent->getKey(),
+				'approvable_parent_type' => $parent->approvableParentClass(),
+				'approvable_parent_id'   => $parent->approvableParentId(),
+				'user_type'       		 => ($user ? $user->getMorphClass() : null),
+				'user_id'         		 => ($user ? $user->id : null),
+			]);
+
+			$create_draft_for_parent($parent);
+		};
+		$create_draft_for_parent($this);
 
 
 		// Unset any changes to drafted fields - only when updating or saving a related version
