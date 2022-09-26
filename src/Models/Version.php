@@ -23,6 +23,7 @@ class Version extends Model
 	protected $appends = [
 		'preview',
 		'diff',
+		'is_updating',
 	];
 
 	const STATUS_DRAFT    = 'draft';    // User's draft ready for approval
@@ -79,7 +80,7 @@ class Version extends Model
 
 			// Optionally set the timestamp when the first draft was approved
 			$approved_field = $this->approvable->timestampFieldForFirstApproved();
-			if (!is_null($approved_field)) {
+			if (!is_null($approved_field) && is_null($this->approvable[$approved_field])) {
 				$this->approvable[$approved_field] = Carbon::now();
 				$this->approvable->save();
 			}
@@ -176,6 +177,15 @@ class Version extends Model
 		if (!$result) return false;
 
 
+		// Optionally set the timestamp when the draft was applied
+		if (!$this->is_deleting) {
+			$applied_field = $this->approvable->timestampFieldForFirstApplied();
+			if (!is_null($applied_field) && is_null($this->approvable[$applied_field])) {
+				$this->approvable[$applied_field] = Carbon::now();
+				$this->approvable->save();
+			}
+		}
+
 
 		$approvable->fireModelEvent('applied', false);
 
@@ -240,6 +250,11 @@ class Version extends Model
 
 
 		return (object) $diff;
+	}
+
+	public function getIsUpdatingAttribute(): bool
+	{
+		return !$this->is_deleting && !$this->is_created;
 	}
 }
 

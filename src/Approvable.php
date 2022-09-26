@@ -47,6 +47,16 @@ trait Approvable
 	}
 
 
+	public function timestampFieldForFirstApplied(): ?string
+	{
+		if (!property_exists($this, 'timestamp_field_for_applied')) {
+			return null;
+		}
+
+		return $this->timestamp_field_for_applied;
+	}
+
+
 	public function versions(): MorphMany
 	{
 		return $this->morphMany(Models\Version::class, 'approvable');
