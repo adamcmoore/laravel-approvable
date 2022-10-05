@@ -27,7 +27,10 @@ class ApprovableObserver
 	public function creating(ApprovableContract $model)
 	{
 		// Do not create related objects
-		if ($model->approvableParentRelation() && !$model->timestampFieldForFirstApproved()) {
+		$model_handles_approval = (
+			$model->timestampFieldForFirstApproved() || $model->timestampFieldForFirstApplied()
+		);
+		if ($model->approvableParentRelation() && !$model_handles_approval) {
 			$version_created = $model->createVersion();
 			if ($version_created) return false;
 		}
