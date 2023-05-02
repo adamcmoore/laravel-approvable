@@ -1,7 +1,7 @@
 ## Laravel Approvable
 A package to require the approval of changes to Eloquent Models.
 
-Supports Laravel versions 5.5 to 6.0.
+Supports Laravel version 10.
 
 
 ### Setup

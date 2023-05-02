@@ -4,3 +4,7 @@ vendor/
 \.phpunit\.result\.cache
 
 .idea/
+
+.phpunit.cache/
+
+*.phar

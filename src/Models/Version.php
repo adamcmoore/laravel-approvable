@@ -179,10 +179,10 @@ class Version extends Model
 
 		// Optionally set the timestamp when the draft was applied
 		if (!$this->is_deleting) {
-			$applied_field = $this->approvable->timestampFieldForFirstApplied();
-			if (!is_null($applied_field) && is_null($this->approvable[$applied_field])) {
-				$this->approvable[$applied_field] = Carbon::now();
-				$this->approvable->save();
+			$applied_field = $approvable->timestampFieldForFirstApplied();
+			if (!is_null($applied_field) && is_null($approvable[$applied_field])) {
+				$approvable[$applied_field] = Carbon::now();
+				$approvable->save();
 			}
 		}
 

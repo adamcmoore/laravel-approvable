@@ -174,7 +174,7 @@ class ApprovableTest extends ApprovableTestCase
 
 		$article = Article::with(['versions.user'])->find($article->id);
 
-		$this->assertEquals($published_at, $article->published_at);
+		$this->assertEquals($published_at, new \DateTime($article->published_at));
 		$this->assertEquals(0, count($article->versions));
 
 		// Check event was not fired
@@ -363,14 +363,14 @@ class ApprovableTest extends ApprovableTestCase
 
 		$draft_diff = $article->draft->diff;
 
-		$this->assertObjectHasAttribute('title', $draft_diff);
-		$this->assertObjectHasAttribute('new', $draft_diff->title);
-		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertTrue(property_exists($draft_diff, 'title'));
+		$this->assertTrue(property_exists($draft_diff->title, 'new'));
+		$this->assertTrue(property_exists($draft_diff->title, 'old'));
 		$this->assertNull($draft_diff->title->old);
 		$this->assertEquals($article->title, $draft_diff->title->new);
-		$this->assertObjectHasAttribute('content', $draft_diff);
-		$this->assertObjectHasAttribute('new', $draft_diff->content);
-		$this->assertObjectHasAttribute('old', $draft_diff->content);
+		$this->assertTrue(property_exists($draft_diff, 'content'));
+		$this->assertTrue(property_exists($draft_diff->content, 'new'));
+		$this->assertTrue(property_exists($draft_diff->content, 'old'));
 		$this->assertNull($draft_diff->content->old);
 		$this->assertEquals($article->content, $draft_diff->content->new);
 
@@ -389,9 +389,9 @@ class ApprovableTest extends ApprovableTestCase
 
 		$draft_diff = $article->draft->diff;
 
-		$this->assertObjectHasAttribute('title', $draft_diff);
-		$this->assertObjectHasAttribute('new', $draft_diff->title);
-		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertTrue(property_exists($draft_diff, 'title'));
+		$this->assertTrue(property_exists($draft_diff->title, 'new'));
+		$this->assertTrue(property_exists($draft_diff->title, 'old'));
 		$this->assertEquals($old_title, $draft_diff->title->old);
 		$this->assertEquals($new_title, $draft_diff->title->new);
 
@@ -403,14 +403,14 @@ class ApprovableTest extends ApprovableTestCase
 		$article = Article::withTrashed()->with(['draft.approvable'])->find($article->id);
 		$draft_diff = $article->draft->diff;
 
-		$this->assertObjectHasAttribute('title', $draft_diff);
-		$this->assertObjectHasAttribute('new', $draft_diff->title);
-		$this->assertObjectHasAttribute('old', $draft_diff->title);
+		$this->assertTrue(property_exists($draft_diff, 'title'));
+		$this->assertTrue(property_exists($draft_diff->title, 'new'));
+		$this->assertTrue(property_exists($draft_diff->title, 'old'));
 		$this->assertNull($draft_diff->title->new);
 		$this->assertEquals($article->title, $draft_diff->title->old);
-		$this->assertObjectHasAttribute('content', $draft_diff);
-		$this->assertObjectHasAttribute('new', $draft_diff->content);
-		$this->assertObjectHasAttribute('old', $draft_diff->content);
+		$this->assertTrue(property_exists($draft_diff, 'content'));
+		$this->assertTrue(property_exists($draft_diff->content, 'new'));
+		$this->assertTrue(property_exists($draft_diff->content, 'old'));
 		$this->assertNull($draft_diff->content->new);
 		$this->assertEquals($article->content, $draft_diff->content->old);
 
