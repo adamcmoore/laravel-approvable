@@ -418,6 +418,7 @@ class ApprovableTest extends ApprovableTestCase
 		Article::disableApproval();
 	}
 
+
 	function testCreatingDraftWhenForcedNoChanges()
 	{
 		Event::fake([
@@ -426,6 +427,7 @@ class ApprovableTest extends ApprovableTestCase
 
         $article = factory(Article::class)->create();
 
+		Article::enableApproval();
 		Article::forceDraft();
 
 		$published_at = $this->faker->dateTime();
@@ -433,7 +435,7 @@ class ApprovableTest extends ApprovableTestCase
 		$article->published_at = $published_at; // Should not require approval, but since we force there should be a draft created
 		$article->save();
 
-		Article::disableForceDraft();
+		Article::disableApproval();
 
 		$article = Article::with(['versions.user'])->find($article->id);
 

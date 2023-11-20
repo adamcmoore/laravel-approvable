@@ -128,6 +128,7 @@ trait Approvable
 
 	public static function disableApproval(): void
 	{
+		static::$force_draft = false;
 		static::$requires_approval = false;
 	}
 
@@ -135,14 +136,8 @@ trait Approvable
 	public static function forceDraft(): void
 	{
 		static::$force_draft = true;
-		static::enableApproval();
 	}
 
-	public static function disableForceDraft(): void
-	{
-		static::$force_draft = false;
-		static::disableApproval();
-	}
 
 	public function requiresApproval(): bool
 	{
