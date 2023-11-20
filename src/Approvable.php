@@ -20,6 +20,7 @@ trait Approvable
 {
 	public static $requires_approval = false;
 
+	public static $force_draft = false;
 
 	public static function bootApprovable()
 	{
@@ -127,13 +128,20 @@ trait Approvable
 
 	public static function disableApproval(): void
 	{
+		static::$force_draft = false;
 		static::$requires_approval = false;
+	}
+
+
+	public static function forceDraft(): void
+	{
+		static::$force_draft = true;
 	}
 
 
 	public function requiresApproval(): bool
 	{
-        return count($this->dataRequiringApproval()) > 0;
+        return self::$force_draft || count($this->dataRequiringApproval()) > 0;
 	}
 
 
