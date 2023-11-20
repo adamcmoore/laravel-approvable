@@ -100,6 +100,14 @@ $draft->apply('Optional note regarding decision to apply');
 $draft->drop('Optional note regarding decision to drop');
 ```
 
+### Force draft creation when updating
+Creating and Deleting will always create a draft when approval is enabled.
+
+Updating will only create a draft when model attributes have been changed.
+
+To always taking a draft, even when no data has been changed, use `Model::forceDraft();` after `Model::enableApproval()`.
+
+
 ### Eloquent Model Events
 Model events are fired on the Approvable Model when the status of its draft changes. 
 These can be listened to with an Observer. Events triggered are:
