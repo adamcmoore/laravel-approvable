@@ -25,16 +25,28 @@ trait Approvable
 	public static function bootApprovable()
 	{
 		static::observe(new ApprovableObserver());
+	}
 
-		app('events')->listen('eloquent.booted: '.static::class, function($model){
-			$model->addObservableEvents([
-				'new_draft',
-				'approved',
-				'rejected',
-				'dropped',
-				'applied',
-			]);
-		});
+
+	/**
+	 * Register the custom draft events as observable. Laravel calls
+	 * initialize{Trait} on every instance, so these are present on every model
+	 * instance — including the throwaway `new static` inside Model::observe(),
+	 * which only wires observer methods for events already observable at that
+	 * point. (Previously these were added via a one-shot `eloquent.booted:`
+	 * listener that fired only for a class's first-booted instance, so a model
+	 * observed after it had already been booted — e.g. by another observer —
+	 * silently lost its draft-event listeners.)
+	 */
+	public function initializeApprovable(): void
+	{
+		$this->addObservableEvents([
+			'new_draft',
+			'approved',
+			'rejected',
+			'dropped',
+			'applied',
+		]);
 	}
 
 
@@ -141,7 +153,7 @@ trait Approvable
 
 	public function requiresApproval(): bool
 	{
-        return self::$force_draft || count($this->dataRequiringApproval()) > 0;
+		return self::$force_draft || count($this->dataRequiringApproval()) > 0;
 	}
 
 
@@ -223,8 +235,8 @@ trait Approvable
 	{
 		$existing_draft = $this->draft;
 
-    	// Only take a draft if setup to do so
-	    if (!$this->isApprovalEnabled()) return false;
+		// Only take a draft if setup to do so
+		if (!$this->isApprovalEnabled()) return false;
 
 		$user = Auth::user();
 		$values = null;
