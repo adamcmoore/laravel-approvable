@@ -22,9 +22,33 @@ trait Approvable
 
 	public static $force_draft = false;
 
+	/**
+	 * Registers ApprovableObserver directly via registerModelEvent() rather
+	 * than static::observe(), which constructs `new static` internally to
+	 * read the fully-initialized instance's observable-events list. That
+	 * construction re-enters this same class's bootIfNotBooted() while it's
+	 * still mid-boot — silently a no-op pre-Laravel-13, but an explicit
+	 * LogicException from Laravel 13 on (bootIfNotBooted() now throws on
+	 * reentrant calls instead of skipping them). Safe to bypass here because
+	 * ApprovableObserver only implements base Eloquent lifecycle methods
+	 * (creating/created/updating/deleting), all already present in the
+	 * framework's hardcoded default observable-events list — it never needs
+	 * the custom draft events initializeApprovable() adds per-instance, so
+	 * no instance is actually required to register it correctly.
+	 */
 	public static function bootApprovable()
 	{
-		static::observe(new ApprovableObserver());
+		$observer = new ApprovableObserver();
+
+		foreach ([
+			'retrieved', 'creating', 'created', 'updating', 'updated',
+			'saving', 'saved', 'restoring', 'restored', 'replicating',
+			'trashed', 'deleting', 'deleted', 'forceDeleting', 'forceDeleted',
+		] as $event) {
+			if (method_exists($observer, $event)) {
+				static::registerModelEvent($event, get_class($observer) . '@' . $event);
+			}
+		}
 	}
 
 
