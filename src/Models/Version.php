@@ -198,7 +198,7 @@ class Version extends Model
 		if (!$this->relationLoaded('approvable')) return null;
 
 		$approvable = $this->approvable->replicate();
-		$approvable->fill($this->values);
+		$approvable->fill($this->values ?? []);
 
 		// Reload any loaded relations
 		foreach ($approvable->relations as $key => $data) {
@@ -214,9 +214,12 @@ class Version extends Model
 		if (!$this->relationLoaded('approvable')) return null;
 
 
+		// A deleting draft is stored without values
+		$values = $this->values ?? [];
+
 		$new = new $this->approvable_type;
 		if (!$this->is_deleting) {
-			$new->fill($this->values);
+			$new->fill($values);
 		}
 
 
@@ -238,7 +241,7 @@ class Version extends Model
 
 			// If the calue hasn't been drafted, and we're not deleting,
 			// then ignore the field
-			if (!$this->is_deleting && !array_key_exists($field, $this->values)) {
+			if (!$this->is_deleting && !array_key_exists($field, $values)) {
 				continue;
 			}
 

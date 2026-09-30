@@ -349,6 +349,42 @@ class ApprovableTest extends ApprovableTestCase
 	}
 
 
+	function testVersionWithoutValues()
+	{
+		$article = factory(Article::class)->create();
+
+
+		// Created by hand without values, e.g. to hold an unchanged record for approval
+		// ====================================================================
+		Version::create([
+			'status'          => Version::STATUS_DRAFT,
+			'approvable_type' => Article::class,
+			'approvable_id'   => $article->id,
+		]);
+
+		$article = Article::with(['draft.approvable'])->find($article->id);
+
+		$this->assertNull($article->draft->values);
+		$this->assertEquals($article->title, $article->draft->preview->title);
+		$this->assertEquals((object) [], $article->draft->diff);
+
+
+		// Deleting drafts are stored without values
+		// ====================================================================
+		Version::whereNotNull('id')->delete();
+		$article = Article::find($article->id);
+
+		Article::enableApproval();
+		$article->delete();
+		Article::disableApproval();
+
+		$article = Article::withTrashed()->with(['draft.approvable'])->find($article->id);
+
+		$this->assertTrue($article->draft->is_deleting);
+		$this->assertEquals($article->title, $article->draft->preview->title);
+	}
+
+
 	function testVersionDiff()
 	{
 		Article::enableApproval();
