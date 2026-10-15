@@ -294,6 +294,9 @@ trait Approvable
 		$existing_draft = $this->draft;
 		if ($existing_draft) {
 
+			// A record edited before its first approval is still being created
+			$new_version['is_created'] = $existing_draft->is_created || $is_created;
+
 			// If we are updating, then merge the new values with the existing draft
 			if (!$is_deleting) {
 				$new_version['values'] = array_merge(

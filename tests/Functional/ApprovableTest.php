@@ -385,6 +385,26 @@ class ApprovableTest extends ApprovableTestCase
 	}
 
 
+	function testReEditingANewRecordKeepsItsDraftAsCreated()
+	{
+		Article::enableApproval();
+
+		$article = factory(Article::class)->create();
+		$article = Article::find($article->id);
+
+		$new_title = uniqid();
+		$article->title = $new_title;
+		$article->save();
+
+		$article = Article::with(['draft.approvable'])->find($article->id);
+
+		$this->assertTrue($article->draft->is_created);
+		$this->assertEquals($new_title, $article->draft->values['title']);
+		$this->assertNull($article->draft->diff->title->old);
+		$this->assertEquals($new_title, $article->draft->diff->title->new);
+	}
+
+
 	function testVersionDiff()
 	{
 		Article::enableApproval();
@@ -413,6 +433,10 @@ class ApprovableTest extends ApprovableTestCase
 
 		// Test Updating Approvable
 		// ====================================================================
+		$article->draft->approve();
+		$article->draft->apply();
+
+		$article = Article::find($article->id);
 		$old_title = $article->title;
 		$new_title = uniqid();
 		$article->title = $new_title;
